@@ -1,5 +1,5 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "RobotType": {
@@ -25,27 +25,16 @@
             "metadata": {
                 "description": "VMs Admin password"
             }
-        },
-        "virtualMachineSize": {
-            "defaultValue": "Standard_B2s",
-            "allowedValues": [
-                "Standard_B2s",
-                "Standard_F4s",
-                "Standard_A2_v2"
-            ],
-            "type": "String",
-            "metadata": {
-                "description": "VM tier"
-            }
         }
     },
     "variables": {
         "location": "[resourceGroup().location]",
         "vm-prefix": "[parameters('adminusername')]",
         "dnsSuffix": "[concat(variables('vm-prefix'),'-dns')]",
-        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/Scripts/Install-UiRobot.ps1",
+        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/Install-UiRobot.ps1",
         "vmName": "[concat(variables('vm-prefix'),'-uip')]",
         "osDiskType": "StandardSSD_LRS",
+        "virtualMachineSize": "Standard_D4s_v3",
         "publicIpAddressName": "[concat(variables('vm-prefix'), '-pip')]",
         "networkInterfaceName": "[concat(variables('vm-prefix'),'-nic')]",
         "virtualNetworkName": "dsf-project-test-vnet",
@@ -159,7 +148,7 @@
               },
             "properties": {
                 "hardwareProfile": {
-                    "vmSize": "[parameters('virtualMachineSize')]"
+                    "vmSize": "[variables('virtualMachineSize')]"
                 },
                 "storageProfile": {
                     "osDisk": {
