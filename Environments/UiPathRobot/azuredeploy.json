@@ -2,18 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "RobotType": {
-            "type": "string",
-            "defaultValue": "Attended",
-            "allowedValues": [
-                "Unattended",
-                "Development",
-                "Attended"
-            ],
-            "metadata": {
-                "description": "Robot Type"
-            }
-        },
         "adminusername": {
             "type": "String",
             "metadata": {
@@ -30,7 +18,6 @@
     "variables": {
         "location": "[resourceGroup().location]",
         "vm-prefix": "[parameters('adminusername')]",
-        "dnsSuffix": "[concat(variables('vm-prefix'),'-dns')]",
         "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/Install-UiRobot.ps1",
         "vmName": "[concat(variables('vm-prefix'),'-uip')]",
         "osDiskType": "StandardSSD_LRS",
@@ -47,7 +34,7 @@
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
         "scriptFileName": "[variables('scriptFileBreakString')[0]]",
-        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-RobotType',' ',parameters('RobotType'))]"
+        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'))]"
     },
     "resources": [
         {
@@ -134,7 +121,7 @@
             "properties": {
                 "publicIPAllocationMethod": "Dynamic",
                 "dnsSettings": {
-                    "domainNameLabel": "[variables('dnsSuffix')]"
+                    "domainNameLabel": "[concat('a',toLower(uniqueString(resourceGroup().id)))]"
                 }
             }
         },
