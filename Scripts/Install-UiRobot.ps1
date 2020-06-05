@@ -2,13 +2,10 @@
 Param (
   [Parameter()]
   [AllowEmptyString()]
-  [string] $RobotType = "Attended",
+  [string] $robotArtifact = "http://download.uipath.com/UiPathStudioSetup.exe",
   [Parameter()]
   [AllowEmptyString()]
-  [string] $robotArtifact = "https://download.uipath.com/UiPathStudio.msi",
-  [Parameter()]
-  [AllowEmptyString()]
-  [string]$artifactFileName = "UiPathStudio.msi"
+  [string]$artifactFileName = "UiPathStudioSetup.exe"
 )
 #Set Error Action to Silently Continue
 $ErrorActionPreference = "SilentlyContinue"
@@ -20,8 +17,6 @@ $sDebug = $true
 $sLogPath = "C:\Windows\Temp"
 $sLogName = "Install-UiPathRobot.log"
 $sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
-#Orchestrator SSL check
-$orchSSLcheck = $false
 
 function Main {
 
@@ -31,18 +26,12 @@ function Main {
     #Define TLS for Invoke-WebRequest
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    if (!$orchSSLcheck) {
-
-      [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-
-    }
-
     #Setup temp dir in %appdata%\Local\Temp
     $script:tempDirectory = (Join-Path $ENV:TEMP "UiPath-$(Get-Date -f "yyyyMMddhhmmssfff")")
     New-Item -ItemType Directory -Path $script:tempDirectory | Out-Null
 
     #Download UiPlatform
-    $msiPath = Join-Path $script:tempDirectory $artifactFileName
+    $artifactPath = Join-Path $script:tempDirectory $artifactFileName
 
     $maxAttempts = 5 #set the maximum number of attempts in case the download will never succeed.
 
@@ -51,156 +40,26 @@ function Main {
     Do {
 
       $attemptCount++
-      Download-File -url $robotArtifact -outputFile $msiPath
+      Download-File -url $robotArtifact -outputFile $artifactPath
 
-    } while (((Test-Path $msiPath) -eq $false) -and ($attemptCount -le $maxAttempts))
+    } while (((Test-Path $artifactPath) -eq $false) -and ($attemptCount -le $maxAttempts))
 
-
-    #Get Robot path
-    $robotExePath = Get-UiRobotExePath
-
-    if (!(Test-Path $robotExePath)) {
 
       #Log log log
-      Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot Type [$RobotType]"
-
-      #Install the Robot
-      if ($RobotType -eq "Unattended") {
-        # log log log
-        Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot without Studio Feature"
-        $msiFeatures = @("DesktopFeature", "Robot", "StartupLauncher", "RegisterService", "Packages")
-      }
-      else {
-        # log log log
-        Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot with Studio Feature"
-        $msiFeatures = @("DesktopFeature", "Robot", "Studio", "StartupLauncher", "RegisterService", "Packages")
-      }
+      Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot"
 
       Try {
-        $installResult = Install-Robot -msiPath $msiPath -msiFeatures $msiFeatures
+        Start-Process $artifactPath /S -NoNewWindow -Wait -PassThru
       }
-
       Catch {
         Log-Error -LogPath $sLogFile -ErrorDesc $_.Exception -ExitGracefully $True
         Break
       }
-
       #End of the Robot installation
 
-    }
-
-
-      #Starting Robot
-      start-process -filepath $robotExePath -verb runas
-      $waitForRobotSVC = waitForService "UiPath Robot*" "Running"
-      Log-Write -LogPath $sLogFile -ErrorDesc $waitForRobotSVC -ExitGracefully $True
       #Remove temp directory
       Log-Write -LogPath $sLogFile -LineValue "Removing temp directory $($script:tempDirectory)"
       Remove-Item $script:tempDirectory -Recurse -Force | Out-Null
-
-
-
-}
-
-
-<#
-  .DESCRIPTION
-  Wait for Robots service to start. This should be used on Citrix Environment, Non-Persistent VDI.
-
-  .PARAMETER servicesName
-  Name of the service which should be Running Stopped.
-
-  .PARAMETER serviceStatus
-  Status of the defined service.
-
-#>
-function waitForService($servicesName, $serviceStatus) {
-
-  # Get all services where DisplayName matches $serviceName and loop through each of them.
-  foreach ($service in (Get-Service -DisplayName $servicesName)) {
-    if ($serviceStatus -eq 'Running') {
-      Start-Service $service.Name
-    }
-    if ($serviceStatus -eq "Stopped" ) {
-      Stop-Service $service.Name
-    }
-    # Wait for the service to reach the $serviceStatus or a maximum of specified time
-    $service.WaitForStatus($serviceStatus, '00:01:20')
-  }
-
-  return $serviceStatus
-
-}
-<#
-  .DESCRIPTION
-  Installs an MSI by calling msiexec.exe, with verbose logging
-
-  .PARAMETER msiPath
-  Path to the MSI to be installed
-
-  .PARAMETER logPath
-  Path to a file where the MSI execution will be logged via "msiexec [...] /lv*"
-
-  .PARAMETER features
-  A list of features that will be installed via ADDLOCAL="..."
-
-  .PARAMETER properties
-  Additional MSI properties to be passed to msiexec
-#>
-function Invoke-MSIExec {
-
-  param (
-    [Parameter(Mandatory = $true)]
-    [string] $msiPath,
-
-    [Parameter(Mandatory = $true)]
-    [string] $logPath,
-
-    [string[]] $features,
-
-    [System.Collections.Hashtable] $properties
-  )
-
-  if (!(Test-Path $msiPath)) {
-    throw "No .msi file found at path '$msiPath'"
-  }
-
-  $msiExecArgs = "/i `"$msiPath`" /q /lv* `"$logPath`" "
-
-  if ($features) {
-    $msiExecArgs += "ADDLOCAL=`"$($features -join ',')`" "
-  }
-
-  if ($properties) {
-    $msiExecArgs += (($properties.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -join " ")
-  }
-
-  $process = Start-Process "msiexec" -ArgumentList $msiExecArgs -Wait -PassThru
-
-  return $process
-}
-
-<#
-  .DESCRIPTION
-  Gets the path to the UiRobot.exe file
-
-  .PARAMETER community
-  Whether to search for the UiPath Studio Community edition executable
-#>
-function Get-UiRobotExePath {
-
-  param(
-    [switch] $community
-  )
-
-  $robotExePath = [System.IO.Path]::Combine(${ENV:ProgramFiles(x86)}, "UiPath", "Studio", "UiRobot.exe")
-
-  if ($community) {
-    $robotExePath = Get-ChildItem ([System.IO.Path]::Combine($ENV:LOCALAPPDATA, "UiPath")) -Recurse -Include "UiRobot.exe" | `
-      Select-Object -ExpandProperty FullName -Last 1
-  }
-
-  return $robotExePath
 }
 
 
@@ -248,51 +107,6 @@ function Download-File {
 
     Log-Error -LogPath $sLogFile -ErrorDesc "The following error occurred: $_" -ExitGracefully $True
 
-  }
-}
-
-<#
-  .DESCRIPTION
-  Install UiPath Robot and/or Studio.
-
-  .PARAMETER msiPath
-  MSI installer path.
-
-  .PARAMETER installationFolder
-  Installation folder location.
-
-  .PARAMETER msiFeatures
-  MSI features : Robot with or without Studio
-  #>
-function Install-Robot {
-
-  param (
-    [Parameter(Mandatory = $true)]
-    [string] $msiPath,
-
-    [string] $installationFolder,
-
-    [string[]] $msiFeatures
-  )
-
-  if (!$msiProperties) {
-    $msiProperties = @{}
-  }
-
-
-  if ($installationFolder) {
-    $msiProperties["APPLICATIONFOLDER"] = $installationFolder;
-  }
-
-  $logPath = Join-Path $script:tempDirectory "install.log"
-
-  Write-Verbose "Installing UiPath"
-
-  $process = Invoke-MSIExec -msiPath $msiPath -logPath $logPath -features $msiFeatures
-
-  return @{
-    LogPath        = $logPath;
-    MSIExecProcess = $process;
   }
 }
 
