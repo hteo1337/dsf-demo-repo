@@ -17,9 +17,9 @@
     },
     "variables": {
         "location": "[resourceGroup().location]",
-        "vm-prefix": "[parameters('adminusername')]",
+        "vm-prefix": "[toLower(uniqueString(resourceGroup().id))]",
         "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/Install-UiRobot.ps1",
-        "vmName": "[concat(variables('vm-prefix'),'-uip')]",
+        "vmName": "[variables('vm-prefix')]",
         "osDiskType": "StandardSSD_LRS",
         "virtualMachineSize": "Standard_D4s_v3",
         "publicIpAddressName": "[concat(variables('vm-prefix'), '-pip')]",
