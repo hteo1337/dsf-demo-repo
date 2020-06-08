@@ -49,7 +49,7 @@ function Main {
       Log-Write -LogPath $sLogFile -LineValue "Installing UiPath Robot"
 
       Try {
-        Start-Process $artifactPath /S -NoNewWindow -Wait -PassThru
+        Start-Process $artifactPath /S -NoNewWindow  -PassThru
       }
       Catch {
         Log-Error -LogPath $sLogFile -ErrorDesc $_.Exception -ExitGracefully $True
