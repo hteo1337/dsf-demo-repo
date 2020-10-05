@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "AIFabric",
+    "description": "This template creates 2 blank VMs",
+    "githubUsername": "hteo1337",
+    "summary": "Deploys 2 blank VMs as an environment in a DevTest Lab."
+}

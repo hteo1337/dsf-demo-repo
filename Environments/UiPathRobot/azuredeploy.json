@@ -34,7 +34,7 @@
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
         "scriptFileName": "[variables('scriptFileBreakString')[0]]",
-        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'))]"
+        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File  ', variables('scriptFileName'))]"
     },
     "resources": [
         {

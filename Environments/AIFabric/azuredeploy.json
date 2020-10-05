@@ -1,0 +1,186 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminusername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for the Virtual Machine."
+            }
+        },
+        "adminpassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "osType": {
+            "defaultValue": "RHEL",
+            "allowedValues": [
+                "RHEL",
+                "UBUNTU",
+                "CENTOS"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "AIFabric OS"
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "virtualNetworkName": "dsf-project-vnet",
+        "addressPrefix": "10.0.0.0/16",
+        "subnetPrefix": "10.0.0.0/24",
+        "subnetName":"dsf-project-subnet1",
+        "networkSecurityGroupName": "dsf-project-nsg",
+        "orchestratorSize": "Standard_A4_v2",
+        "AIFabricSize": "Standard_A8m_v2"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "vnet-template",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/AIFabric/LinkedTemplate/vnet/vnetTemplate.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[variables('location')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[variables('virtualNetworkName')]"
+                    },
+                    "addressPrefix": {
+                        "value": "[variables('addressPrefix')]"
+                    },
+                    "subnetPrefix": {
+                        "value": "[variables('subnetPrefix')]"
+                    },
+                    "subnetName": {
+                        "value": "[variables('subnetName')]"
+                    },
+                    "networkSecurityGroupName": {
+                        "value": "[variables('networkSecurityGroupName')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "linkedOrch",
+            "dependsOn": [
+                "vnet-template"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/AIFabric/LinkedTemplate/vmTemplate/vmTemplate.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[resourceGroup().location]"
+                    },
+                    "vmRole": {
+                        "value": "orch"
+                    },
+                    "adminusername": {
+                        "value": "[parameters('adminusername')]"
+                    },
+                    "adminpassword": {
+                        "value": "[parameters('adminpassword')]"
+                    },
+                    "osType": {
+                        "value": "WINDOWS2016"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[variables('virtualNetworkName')]"
+                    },
+                    "networkSecurityGroupName": {
+                        "value": "[variables('networkSecurityGroupName')]"
+                    },
+                    "subnetName": {
+                        "value": "[variables('subnetName')]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[variables('orchestratorSize')]"
+                    },
+                    "dataDiskSize": {
+                        "value": 20
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "linkedAIF",
+            "dependsOn": [
+                "linkedOrch"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/AIFabric/LinkedTemplate/vmTemplate/vmTemplate.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[resourceGroup().location]"
+                    },
+                    "vmRole": {
+                        "value": "aif"
+                    },
+                    "adminusername": {
+                        "value": "[parameters('adminusername')]"
+                    },
+                    "adminpassword": {
+                        "value": "[parameters('adminpassword')]"
+                    },
+                    "osType": {
+                        "value": "[parameters('osType')]"
+                    },
+                    "virtualNetworkName": {
+                        "value": "[variables('virtualNetworkName')]"
+                    },
+                    "networkSecurityGroupName": {
+                        "value": "[variables('networkSecurityGroupName')]"
+                    },
+                    "subnetName": {
+                        "value": "[variables('subnetName')]"
+                    },
+                    "virtualMachineSize": {
+                        "value": "[variables('AIFabricSize')]"
+                    },
+                     "dataDiskSize": {
+                        "value": 500
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "VMUser": {
+            "value": "[parameters('adminusername')]",
+            "type": "string"
+        },
+        "VMPass": {
+            "value": "[parameters('adminpassword')]",
+            "type": "string"
+        },
+        "OrchestratorFQDN":{
+            "value": "[reference('linkedOrch').outputs.fqdn.value]",
+            "type": "string"
+        },
+        "AIFabricFQDN":{
+            "value": "[reference('linkedAIF').outputs.fqdn.value]",
+            "type": "string"
+        }
+    }
+}
