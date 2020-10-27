@@ -1129,8 +1129,8 @@
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('sqlNicNamePrefix')))).ipConfigurations[0].properties.privateIPAddress]"
     },
     "ELKRHELVMPrivateIP": {
-      "type": "array",
-      "value": "[concat(reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress,',',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress,',',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress)]"
+      "type": "string",
+      "value": "[concat(reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress)]"
     }
   }
 }
