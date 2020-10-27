@@ -881,7 +881,7 @@
           "dataDisks": [
             {
               "diskSizeGB": "[variables('dataDisks').diskSizeGB]",
-              "lun": 0,
+              "lun": 1,
               "createOption": "[variables('dataDisks').createOption]",
               "writeAcceleratorEnabled": "[variables('dataDisks').writeAcceleratorEnabled]",
               "managedDisk": {
@@ -927,15 +927,15 @@
           "DiskConfigurationType": "NEW",
           "StorageWorkloadType": "General",
           "SQLDataSettings": {
-            "LUNs": "[array(0)]",
+            "LUNs": "[array(1)]",
             "DefaultFilePath": "F:\\SQLData"
           },
           "SQLLogSettings": {
-            "Luns": "[array(0)]",
+            "Luns": "[array(1)]",
             "DefaultFilePath": "F:\\SQLLog"
           },
           "SQLTempDbSettings": {
-            "Luns": "[array(0)]",
+            "Luns": "[array(1)]",
             "DefaultFilePath": "F:\\SQLTemp"
           }
         }
