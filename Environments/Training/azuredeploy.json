@@ -1,0 +1,980 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "allowedValues": [
+        "northeurope",
+        "westeurope",
+        "eastus",
+        "japaneast"
+
+      ]
+    },
+    "adminusername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username"
+      }
+    },
+    "adminpassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password"
+      }
+    }
+  },
+  "variables": {
+    "vnetName": "[concat('vnet-',parameters('adminUsername'))]",
+    "publicIPAddressName": "[concat('pip-',parameters('adminUsername'))]",
+    "publicIPAddressName2": "[concat('pip-',parameters('adminUsername'),'-utl')]",
+    "lbName": "[concat('lb-',parameters('adminUsername'))]",
+    "lbName2": "[concat('lb-',parameters('adminUsername'),'-utl')]",
+    "orchNicNamePrefix": "[concat('onic-',parameters('adminUsername'), substring(uniqueString(resourceGroup().id),1,4))]",
+    "robotNicNamePrefix": "[concat('onic-',parameters('adminUsername'), substring(uniqueString(resourceGroup().id),4,8))]",
+    "elkNicNamePrefix": "[concat('onic-',parameters('adminUsername'), substring(uniqueString(resourceGroup().name),3,7))]",
+    "haaNicNamePrefix": "[concat('hnic-',parameters('adminUsername'), substring(uniqueString(resourceGroup().name),1,4))]",
+    "dnsNameforLBIP": "[toLower(concat('lbDNS-tests-', substring(uniqueString(resourceGroup().id),1,10)))]",
+    "dnsNameforLBIP2": "[toLower(concat('lbDNS-utl-', substring(uniqueString(resourceGroup().name),1,10)))]",
+    "sqlNicNamePrefix": "[concat('sqlnic-',parameters('adminUsername'), substring(uniqueString(resourceGroup().name),3,7))]",
+    "storageAccountName": "[toLower(concat(substring(uniqueString(resourceGroup().name),1,4), substring(uniqueString(resourceGroup().id),1,10)))]",
+    "storageAccountType": "Standard_LRS",
+    "availabilitySetName": "[concat('avSet-',parameters('adminUsername'))]",
+    "orchVMNamePrefix": "[concat('orch-vm-',parameters('adminUsername'))]",
+    "robotVMNamePrefix": "[concat('robot-vm-',parameters('adminUsername'))]",
+    "elkVMNamePrefix": "[concat('elk-vm-',parameters('adminUsername'))]",
+    "haaVMNamePrefix": "[concat('haa-vm-',parameters('adminUsername'))]",
+    "sqlVMNamePrefix": "[concat('sql-',parameters('adminUsername'))]",
+    "vmSize": "Standard_B4ms",
+    "orchImagePublisher": "MicrosoftWindowsServer",
+    "orchImageOffer": "WindowsServer",
+    "orchImageSKU": "2019-Datacenter",
+    "robotImagePublisher": "MicrosoftWindowsDesktop",
+    "robotImageOffer": "Windows-10",
+    "robotImageSKU": "20h1-ent",
+    "haaImagePublisher": "RedHat",
+    "haaImageOffer": "RHEL",
+    "haaImageSKU": "7.4",
+    "winHardenedimagePublisher": "center-for-internet-security-inc",
+    "winHardenedimageOffer": "cis-windows-server-2019-v1-0-0-l1",
+    "winHardenedimageSKU": "cis-ws2019-l1",
+    "addressPrefix": "10.0.0.0/16",
+    "orchSubnetName": "orchestrator",
+    "haaSubnetName": "haa",
+    "orchSubnetPrefix": "10.0.0.0/24",
+    "haaSubnetPrefix": "10.0.1.0/24",
+    "publicIPAddressType": "Dynamic",
+    "orchSubnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables ('orchSubnetName'))]",
+    "haaSubnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables ('haaSubnetName'))]",
+    "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
+    "publicIPAddressID2": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName2'))]",
+    "orchNumberOfInstances": 2,
+    "haaNumberOfInstances": 3,
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
+    "lbID2": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName2'))]",
+    "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
+    "frontEndIPConfigID2": "[concat(variables('lbID2'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
+    "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/BackendPool1')]",
+    "lbPoolID2": "[concat(variables('lbID2'),'/backendAddressPools/BackendPool1')]",
+    "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
+    "lbProbeID2": "[concat(variables('lbID2'),'/probes/tcpProbe')]",
+    "appInstallerScriptName": "appInstaller.ps1",
+    "appInstallerScriptURI": "https://raw.githubusercontent.com/hteo1337/scripts/master/Setup/appInstaller.ps1",
+    "networkSecurityGroupName": "[toLower(concat(substring(uniqueString(resourceGroup().name),1,4), substring(uniqueString(resourceGroup().id),1,10), '-nsg'))]",
+    "networkSecurityGroupRules": [
+      {
+        "name": "RDP",
+        "properties": {
+          "priority": 300,
+          "protocol": "TCP",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourceAddressPrefix": "*",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "*",
+          "destinationPortRange": "3389"
+        }
+      },
+      {
+        "name": "SQL",
+        "properties": {
+          "priority": 301,
+          "protocol": "TCP",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourceAddressPrefix": "*",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "*",
+          "destinationPortRange": "1443"
+        }
+      }
+    ],
+    "nsgId": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
+    "dataDisks": {
+      "createOption": "empty",
+      "caching": "ReadOnly",
+      "writeAcceleratorEnabled": false,
+      "storageAccountType": "Standard_LRS",
+      "diskSizeGB": 1023
+    }
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName')]",
+      "apiVersion": "2019-06-01",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[variables('storageAccountType')]"
+      },
+      "kind": "Storage"
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('availabilitySetName')]",
+      "apiVersion": "2019-07-01",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformFaultDomainCount": 2,
+        "platformUpdateDomainCount": 2
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsNameforLBIP')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('orchSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('orchSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('haaSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('haaSubnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('orchNicNamePrefix'),'-', copyindex())]",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "nicLoop",
+        "count": "[variables('orchNumberOfInstances')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('lbName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('orchSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('lbID'), '/backendAddressPools/BackendPool1')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(variables('lbID'),'/inboundNatRules/RDP-VM', copyindex())]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "name": "[variables('lbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BackendPool1"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "RDP-VM0",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 50001,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "RDP-VM1",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 50002,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "LBRule",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[variables('lbProbeID')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "tcpProbe",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2019-07-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('orchVMNamePrefix'),'-', copyindex())]",
+      "copy": {
+        "name": "virtualMachineLoop",
+        "count": "[variables('orchNumberOfInstances')]"
+      },
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('orchNicNamePrefix'),'-', copyindex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',variables('availabilitySetName'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('orch-vm','-', copyIndex())]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('orchImagePublisher')]",
+            "offer": "[variables('orchImageOffer')]",
+            "sku": "[variables('orchImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('orchNicNamePrefix'),'-',copyindex()))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(variables('storageAccountName'), '2019-06-01').primaryEndpoints.blob]"
+          }
+        }
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "apiVersion": "2019-03-01",
+          "name": "orch-setup-script",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[concat(variables('orchVMNamePrefix'),'-', copyindex())]"
+          ],
+          "tags": {
+            "displayName": "orch-setup-script"
+          },
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "CustomScriptExtension",
+            "typeHandlerVersion": "1.8",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[variables('appInstallerScriptURI')]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('appInstallerScriptName'))]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[concat(variables('availabilitySetName'), '-utl')]",
+      "apiVersion": "2019-07-01",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformFaultDomainCount": 2,
+        "platformUpdateDomainCount": 2
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat(variables('publicIPAddressName2'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsNameforLBIP2')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('robotNicNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('lbName2'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('orchSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('lbID2'), '/backendAddressPools/BackendPool1')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(variables('lbID2'),'/inboundNatRules/RDP-VM-Robot')]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('elkNicNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]",
+        "[concat('Microsoft.Network/loadBalancers/', variables('lbName2'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('orchSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(variables('lbID2'), '/backendAddressPools/BackendPool1')]"
+                }
+              ],
+              "loadBalancerInboundNatRules": [
+                {
+                  "id": "[concat(variables('lbID2'),'/inboundNatRules/RDP-VM-ELK')]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2019-07-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('robotVMNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('robotNicNamePrefix'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'),'-utl')]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',concat(variables('availabilitySetName'),'-utl'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('robot-vm00')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('robotImagePublisher')]",
+            "offer": "[variables('robotImageOffer')]",
+            "sku": "[variables('robotImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('robotNicNamePrefix'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(variables('storageAccountName'), '2019-06-01').primaryEndpoints.blob]"
+          }
+        }
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "apiVersion": "2019-03-01",
+          "name": "robot-setup-script",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[variables('robotVMNamePrefix')]"
+          ],
+          "tags": {
+            "displayName": "elk-setup-script"
+          },
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "CustomScriptExtension",
+            "typeHandlerVersion": "1.8",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[variables('appInstallerScriptURI')]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('appInstallerScriptName'))]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2019-07-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('elkVMNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('elkNicNamePrefix'))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'),'-utl')]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',concat(variables('availabilitySetName'),'-utl'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('elk-vm00')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('orchImagePublisher')]",
+            "offer": "[variables('orchImageOffer')]",
+            "sku": "[variables('orchImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('elkNicNamePrefix'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(variables('storageAccountName'), '2019-06-01').primaryEndpoints.blob]"
+          }
+        }
+      },
+      "resources": [
+        {
+          "type": "extensions",
+          "apiVersion": "2019-03-01",
+          "name": "elk-setup-script",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[variables('elkVMNamePrefix')]"
+          ],
+          "tags": {
+            "displayName": "elk-setup-script"
+          },
+          "properties": {
+            "publisher": "Microsoft.Compute",
+            "type": "CustomScriptExtension",
+            "typeHandlerVersion": "1.8",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[variables('appInstallerScriptURI')]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('appInstallerScriptName'))]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "name": "[variables('lbName2')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName2'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID2')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BackendPool1"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "RDP-VM-ELK",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID2')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 50044,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          },
+          {
+            "name": "RDP-VM-Robot",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID2')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 50055,
+              "backendPort": 3389,
+              "enableFloatingIP": false
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "LBRule",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID2')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID2')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[variables('lbProbeID2')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "tcpProbe",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[concat(variables('availabilitySetName'),'-haa')]",
+      "apiVersion": "2019-07-01",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Aligned"
+      },
+      "properties": {
+        "platformFaultDomainCount": 2,
+        "platformUpdateDomainCount": 2
+
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('haaNicNamePrefix'),'-', copyindex())]",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "nicLoop",
+        "count": "[variables('haaNumberOfInstances')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('haaSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2019-07-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('haaVMNamePrefix'),'-', copyindex())]",
+      "copy": {
+        "name": "virtualMachineLoop",
+        "count": "[variables('haaNumberOfInstances')]"
+      },
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('haaNicNamePrefix'),'-', copyindex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', concat(variables('availabilitySetName'),'-haa'))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',concat(variables('availabilitySetName'),'-haa'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('haa-vm','-', copyIndex())]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('haaImagePublisher')]",
+            "offer": "[variables('haaImageOffer')]",
+            "sku": "[variables('haaImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('haaNicNamePrefix'),'-',copyindex()))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(variables('storageAccountName'), '2019-06-01').primaryEndpoints.blob]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": "[variables('networkSecurityGroupRules')]"
+      }
+    },
+    {
+      "apiVersion": "2020-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('sqlNicNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('orchSubnetRef')]"
+              }
+            }
+          }
+        ],
+        "enableAcceleratedNetworking": true,
+        "networkSecurityGroup": {
+          "id": "[variables('nsgId')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('sqlVMNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces/', variables('sqlNicNamePrefix'))]"
+      ],
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "fromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          },
+          "imageReference": {
+            "publisher": "MicrosoftSQLServer",
+            "offer": "sql2019-ws2019",
+            "sku": "SQLDEV",
+            "version": "latest"
+          },
+          "dataDisks": [
+            {
+              "diskSizeGB": "[variables('dataDisks').diskSizeGB]",
+              "lun": 0,
+              "createOption": "[variables('dataDisks').createOption]",
+              "writeAcceleratorEnabled": "[variables('dataDisks').writeAcceleratorEnabled]",
+              "managedDisk": {
+                "storageAccountType": "[variables('dataDisks').storageAccountType]"
+              }
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('sqlNicNamePrefix'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('sqlVMNamePrefix')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVmAgent": true
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.SqlVirtualMachine/SqlVirtualMachines",
+      "apiVersion": "2017-03-01-preview",
+      "name": "[variables('sqlVMNamePrefix')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVMNamePrefix'))]"
+      ],
+      "properties": {
+        "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVMNamePrefix'))]",
+        "sqlManagement": "Full",
+        "SqlServerLicenseType": "PAYG",
+        "StorageConfigurationSettings": {
+          "DiskConfigurationType": "[variables('diskConfigurationType')]",
+          "StorageWorkloadType": "General",
+          "SQLDataSettings": {
+            "LUNs": "[array(0)]",
+            "DefaultFilePath": "F:\\SQLData"
+          },
+          "SQLLogSettings": {
+            "Luns": "[array(0)]",
+            "DefaultFilePath": "F:\\SQLLog"
+          },
+          "SQLTempDbSettings": {
+            "DefaultFilePath": "F:\\SQLTemp"
+          }
+        }
+      }
+    }
+
+  ],
+  "outputs": {
+    "PasswordUsed": {
+      "type": "string",
+      "value": "[parameters('adminpassword')]"
+    },
+    "UserNameUsed": {
+      "type": "string",
+      "value": "[parameters('adminusername')]"
+    },
+    "OrchestratorVM1": {
+      "type": "string",
+      "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).dnsSettings.fqdn,':50001')]"
+    },
+    "OrchestratorVM2": {
+      "type": "string",
+      "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).dnsSettings.fqdn,':50002')]"
+    },
+    "HAAVM1PrivateIP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "HAAVM2PrivateIP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "HAAVM3PrivateIP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "RobotVMRDP": {
+      "type": "string",
+      "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName2'))).dnsSettings.fqdn,':50055')]"
+    },
+    "ELKVMRDP": {
+      "type": "string",
+      "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName2'))).dnsSettings.fqdn,':50044')]"
+    },
+    "RobotVMPrivateIP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', variables('robotNicNamePrefix'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "ELKVMPrivateIP": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', variables('elkNicNamePrefix'))).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "SQLServerAddress": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('sqlNicNamePrefix')))).ipConfigurations[0].properties.privateIPAddress]"
+    }
+  }
+}
