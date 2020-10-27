@@ -898,7 +898,7 @@
           ]
         },
         "osProfile": {
-          "computerName": "[variables('sqlVMNamePrefix')]",
+          "computerName": "sql-server001",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
