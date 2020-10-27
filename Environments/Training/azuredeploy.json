@@ -935,6 +935,7 @@
             "DefaultFilePath": "F:\\SQLLog"
           },
           "SQLTempDbSettings": {
+            "Luns": "[array(0)]",
             "DefaultFilePath": "F:\\SQLTemp"
           }
         }
