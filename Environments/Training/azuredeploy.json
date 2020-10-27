@@ -308,6 +308,9 @@
       "apiVersion": "2019-07-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('orchVMNamePrefix'),'-', copyindex())]",
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
       "copy": {
         "name": "virtualMachineLoop",
         "count": "[variables('orchNumberOfInstances')]"
@@ -479,6 +482,9 @@
       "apiVersion": "2019-07-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('robotVMNamePrefix')]",
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
       "location": "[parameters('location')]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
@@ -555,6 +561,9 @@
       "apiVersion": "2019-07-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('elkVMNamePrefix')]",
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
       "location": "[parameters('location')]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
@@ -755,6 +764,9 @@
       "apiVersion": "2019-07-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('haaVMNamePrefix'),'-', copyindex())]",
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
       "copy": {
         "name": "virtualMachineLoop",
         "count": "[variables('haaNumberOfInstances')]"
@@ -901,6 +913,9 @@
       "apiVersion": "2017-03-01-preview",
       "name": "[variables('sqlVMNamePrefix')]",
       "location": "[parameters('location')]",
+      "tags": {
+        "AlwaysPoweredOn": "True"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVMNamePrefix'))]"
       ],
