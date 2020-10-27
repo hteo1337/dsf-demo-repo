@@ -863,7 +863,7 @@
       },
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
+          "vmSize": "Standard_D4_v4"
         },
         "storageProfile": {
           "osDisk": {
@@ -924,7 +924,7 @@
         "sqlManagement": "Full",
         "SqlServerLicenseType": "PAYG",
         "StorageConfigurationSettings": {
-          "DiskConfigurationType": "[variables('diskConfigurationType')]",
+          "DiskConfigurationType": "NEW",
           "StorageWorkloadType": "General",
           "SQLDataSettings": {
             "LUNs": "[array(0)]",
