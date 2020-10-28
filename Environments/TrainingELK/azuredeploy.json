@@ -1053,11 +1053,11 @@
     }
   ],
   "outputs": {
-    "PasswordUsed": {
+    "passwordUsed": {
       "type": "string",
       "value": "[parameters('adminpassword')]"
     },
-    "UserNameUsed": {
+    "userNameUsed": {
       "type": "string",
       "value": "[parameters('adminusername')]"
     },
@@ -1069,23 +1069,16 @@
       "type": "string",
       "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))).dnsSettings.fqdn,':50002')]"
     },
-    "HAAVM1PrivateIP": {
+
+    "HAAVMsPrivateIP": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress]"
-    },
-    "HAAVM2PrivateIP": {
-      "type": "string",
-      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress]"
-    },
-    "HAAVM3PrivateIP": {
-      "type": "string",
-      "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress]"
+      "value": "[concat(reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('haaNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress)]"
     },
     "RobotVMRDP": {
       "type": "string",
       "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName2'))).dnsSettings.fqdn,':50055')]"
     },
-    "ELKVMRDP": {
+    "ELKVMRDPWindows": {
       "type": "string",
       "value": "[concat(reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName2'))).dnsSettings.fqdn,':50044')]"
     },
@@ -1093,7 +1086,7 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', variables('robotNicNamePrefix'))).ipConfigurations[0].properties.privateIPAddress]"
     },
-    "ELKVMPrivateIP": {
+    "ELKVMPrivateIPWindows": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', variables('elkNicNamePrefix'))).ipConfigurations[0].properties.privateIPAddress]"
     },
@@ -1101,7 +1094,7 @@
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('sqlNicNamePrefix')))).ipConfigurations[0].properties.privateIPAddress]"
     },
-    "ELKRHELVMPrivateIP": {
+    "ELKVMPrivateIPRHEL": {
       "type": "string",
       "value": "[concat(reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress)]"
     }
