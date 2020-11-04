@@ -941,6 +941,8 @@
         },
         "serverConfigurationsManagementSettings": {
           "sqlConnectivityUpdateSettings": {
+            "connectivityType": "PUBLIC",
+            "port": 1433,
             "sqlAuthUpdateUserName": "[parameters('adminusername')]",
             "sqlAuthUpdatePassword": "[parameters('adminpassword')]"
           }
