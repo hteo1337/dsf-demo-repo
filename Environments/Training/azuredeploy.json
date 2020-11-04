@@ -938,10 +938,15 @@
             "Luns": "[array(1)]",
             "DefaultFilePath": "F:\\SQLTemp"
           }
+        },
+        "serverConfigurationsManagementSettings": {
+          "sqlConnectivityUpdateSettings": {
+            "sqlAuthUpdateUserName": "[parameters('adminusername')]",
+            "sqlAuthUpdatePassword": "[parameters('adminpassword')]"
+          }
         }
       }
     }
-
   ],
   "outputs": {
     "PasswordUsed": {
