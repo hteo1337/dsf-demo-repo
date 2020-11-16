@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "UiPathOrchestrator",
+    "description": "This template creates an Orchestrator PaaS environment",
+    "githubUsername": "hteo1337",
+    "summary": "Deploys an Orchestrator instance as an environment in a DevTest Lab."
+}

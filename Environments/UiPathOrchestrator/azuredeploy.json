@@ -1,0 +1,612 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminusername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username"
+            }
+        },
+        "adminpassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password"
+            }
+        },
+        "orchestratorVersion": {
+            "type": "string",
+            "defaultValue": "19.4.10",
+            "allowedValues": [
+                "19.4.10",
+                "19.4.3",
+                "19.4.2",
+                "18.4.6",
+                "18.4.5",
+                "18.4.4",
+                "18.4.3",
+                "18.4.2",
+                "18.4.1"
+            ],
+            "metadata": {
+                "description": "Version of the Orchestrator"
+            }
+        },
+        "orchestratorSize": {
+            "type": "string",
+            "defaultValue": "small",
+            "allowedValues": [ "small", "medium", "large" ],
+            "metadata": {
+                "description": "Size of the Orchestrator based on no. of total robots connected : Small size is for maximum 100 robots, Medium size for total no. of Robots between 100 and 500, Large size is for over 500 Robots"
+            }
+        },
+        "orchestratorInstances": {
+            "type": "int",
+            "defaultValue": 1,
+            "allowedValues": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10"
+            ],
+            "metadata": {
+                "description": "No. of Orchestrator instances on App service"
+            }
+        }
+    },
+    "variables": {
+        "appName": "[toLower(uniqueString(resourceGroup().id))]",
+        "SQLServerName": "[trim(concat(variables('appName'), 'sql'))]",
+        "orchestratorLink": "[concat('https://download.uipath.com/versions/',parameters('orchestratorVersion'),'/','UiPath.Web.zip')]",
+        "appServiceTier": "PremiumV2",
+        "skuCode": "P1v2",
+        "appServiceWorkerSize": "3",
+        "workerSizeId": "3",
+        "numberOfWorkers": "1",
+        "dbName": "[trim(concat(variables('appName'), 'db'))]",
+        "dbEdition": "[if(contains(parameters('orchestratorSize'), 'small'), 'Standard', if(contains(parameters('orchestratorSize'), 'medium'), 'Standard', 'Premium'))]",
+        "dbPerformanceLevel": "[if(contains(parameters('orchestratorSize'), 'small'), 'S1', if(contains(parameters('orchestratorSize'), 'medium'), 'S3', 'P4'))]",
+        "storageAccountType": "Standard_LRS",
+        "salt": "[uniqueString(resourceGroup().id)]",
+        "encriptionKey": "[base64(substring(concat(variables('salt'),uniqueString(resourceGroup().id,variables('salt')),variables('fifthKey')), 0, 32))]",
+        "firstKey": "[guid(variables('salt'))]",
+        "secondKey": "[guid(resourceGroup().id,variables('salt'))]",
+        "thirdKey": "[guid(variables('fifthKey'))]",
+        "fourthKey": "[guid(resourceGroup().id,variables('fifthKey'))]",
+        "fifthKey": "[uniqueString(variables('salt'))]",
+        "sixthKey": "[uniqueString(variables('firstKey'))]",
+        "seventhKey": "[guid(variables('salt'),variables('fifthKey'))]",
+        "eighthKey": "[guid(resourceGroup().id)]",
+        "machineKey": "[toUpper(substring(replace(concat(variables('eighthKey'),variables('thirdKey'),variables('salt')),'-',''), 0, 64))]",
+        "validationMachineKey": "[toUpper(substring(replace(concat(variables('firstKey'),variables('secondKey'),variables('fourthKey'),variables('seventhKey'),variables('fifthKey'),variables('sixthKey')),'-',''), 0, 128))]",
+        "apiKey": "[guid(resourceGroup().id,variables('firstKey'))]",
+        "activitiesApiKey": "[guid(resourceGroup().id,variables('firstKey'))]",
+        "azureLocationMap": {
+            "eastasia": "southeastasia",
+            "southeastasia": "southeastasia",
+            "centralus": "westus2",
+            "westus": "westus2",
+            "westus2": "westus2",
+            "northcentralus": "westus2",
+            "eastus": "eastus",
+            "eastus2": "eastus",
+            "canadacentral": "canadacentral",
+            "canadaeast": "canadacentral",
+            "chinanorth": "southeastasia",
+            "chinaeast": "southeastasia",
+            "chinanorth2": "southeastasia",
+            "chinaeast2": "southeastasia",
+            "uaenorth": "southeastasia",
+            "uaecentral": "southeastasia",
+            "southafricanorth": "southeastasia",
+            "southafricawest": "southeastasia",
+            "northeurope": "westeurope",
+            "westeurope": "westeurope",
+            "francecentral": "westeurope",
+            "francesouth": "westeurope",
+            "germanycentral": "westeurope",
+            "germanynNortheast": "westeurope",
+            "japanwest": "japaneast",
+            "japaneast": "japaneast",
+            "australiaeast": "australiaeast",
+            "australiasoutheast": "australiaeast",
+            "australiacentral": "australiaeast",
+            "australiacentral2": "australiaeast",
+            "brazilsouth": "southcentralus",
+            "southcentralus": "southcentralus",
+            "southindia": "centralindia",
+            "centralindia": "centralindia",
+            "westindia": "centralindia",
+            "ukwest": "uksouth",
+            "uksouth": "uksouth",
+            "westcentralus": "westus2",
+            "koreasouth": "koreacentral",
+            "koreacentral": "koreacentral",
+            "eastus2euap": "eastus",
+            "usdodcentral": "usgovvirginia",
+            "usdodeast": "usgovvirginia",
+            "usgovarizona": "usgovvirginia",
+            "usgoviowa": "usgovvirginia",
+            "usgovtexas": "usgovvirginia",
+            "usgovvirginia": "usgovvirginia"
+        },
+        "loc": "[resourceGroup().location]",
+        "appInsightsRegion": "[variables('azureLocationMap')[variables('loc')]]",
+        "appInsight": "[trim(toLower(concat( variables('appName'),'-appin' ) ))]",
+        "location": "[if(startsWith(variables('loc'), 'us'), variables('appInsightsRegion'), variables('loc'))]",
+        "servicePlanGovAPI": "2018-02-01",
+        "storageAccountName": "[replace(concat(variables('appName'),'sc'),'-','')]",
+        "storageid": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "appServicePlanName": "[concat(variables('appName'), '-serviceplan')]",
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "databaseMaxSizeBytes": "21474836480",
+        "redisCacheName": "[concat(variables('appName'),'-redis')]",
+        "redisid": "[resourceId('Microsoft.Cache/Redis/', variables('redisCacheName'))]",
+        "redisCacheSKU": "[if(contains(parameters('orchestratorSize'), 'small'), 'Standard', if(contains(parameters('orchestratorSize'), 'medium'), 'Standard', 'Premium'))]",
+        "redisCacheFamily": "[if(contains(parameters('orchestratorSize'), 'small'), 'C', if(contains(parameters('orchestratorSize'), 'medium'), 'C', 'P'))]",
+        "redisCacheCapacity": "[if(contains(parameters('orchestratorSize'), 'small'), '2', if(contains(parameters('orchestratorSize'), 'medium'), '2', '3'))]",
+        "enableNonSslPort": "true",
+        "redisPort": "[if(contains(variables('enableNonSslPort'),'true'),'6380','6379')]",
+        "diagnosticsEnabled": "true",
+        "endpointSuffix": "[if(startsWith(variables('loc'), 'us'), 'EndpointSuffix=core.usgovcloudapi.net', 'EndpointSuffix=core.windows.net')]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2017-05-10",
+            "name": "Orchestrator",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[variables('SQLServerName')]",
+            "type": "Microsoft.Sql/servers",
+            "location": "[variables('location')]",
+            "apiVersion": "2017-03-01-preview",
+            "properties": {
+                "administratorLogin": "[parameters('adminusername')]",
+                "administratorLoginPassword": "[parameters('adminpassword')]",
+                "version": "12.0"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2017-03-01-preview",
+                    "name": "[variables('dbName')]",
+                    "type": "databases",
+                    "location": "[variables('location')]",
+                    "dependsOn": [ "[variables('SQLServerName')]" ],
+                    "sku": {
+                        "name": "[variables('dbPerformanceLevel')]",
+                        "tier": "[variables('dbEdition')]"
+                    },
+                    "kind": "v12.0,user",
+                    "properties": {
+                        "maxSizeBytes": "[variables('databaseMaxSizeBytes')]",
+                        "collation": "[variables('collation')]",
+                        "catalogCollation": "[variables('collation')]",
+                        "zoneRedundant": false,
+                        "minCapacity": "50"
+                    }
+                },
+                {
+                    "apiVersion": "2017-03-01-preview",
+                    "name": "AllowAllWindowsAzureIps",
+                    "type": "firewallrules",
+                    "location": "[variables('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers/', variables('SQLServerName'))]"
+                    ],
+                    "properties": {
+                        "endIpAddress": "0.0.0.0",
+                        "startIpAddress": "0.0.0.0"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "apiVersion": "2018-11-01",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "[variables('storageAccountType')]"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "apiVersion": "[if(startsWith(variables('loc'), 'us'), variables('servicePlanGovAPI'), '2018-11-01')]",
+            "name": "[variables('appServicePlanName')]",
+            "type": "Microsoft.Web/serverFarms",
+            "location": "[variables('location')]",
+            "kind": "",
+            "properties": {
+                "name": "[variables('appServicePlanName')]",
+                "workerSize": "[variables('appServiceWorkerSize')]",
+                "workerSizeId": "[variables('workerSizeId')]",
+                "numberOfWorkers": "[variables('numberOfWorkers')]",
+                "reserved": false,
+                "hostingEnvironment": ""
+            },
+            "sku": {
+                "Tier": "[variables('appServiceTier')]",
+                "Name": "[variables('skuCode')]"
+            }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[variables('appName')]",
+            "type": "Microsoft.Web/Sites",
+            "location": "[variables('location')]",
+            "tags": {
+                "[concat('hidden-related:', '/subscriptions/', subscription().subscriptionId,'/resourcegroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', variables('appServicePlanName'))]": "empty"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverFarms/', variables('appServicePlanName'))]",
+                "[resourceId('Microsoft.Cache/Redis/', variables('redisCacheName'))]",
+                "[resourceId('Microsoft.Insights/components/', variables('appInsight'))]"
+            ],
+            "properties": {
+                "name": "[variables('appName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
+                "hostingEnvironment": "",
+                "siteConfig": {
+                    "connectionStrings": [
+                        {
+                            "name": "Default",
+                            "ConnectionString": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', variables('SQLServerName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('dbName'), ';User Id=', parameters('adminusername'), '@', variables('SQLServerName'), ';Password=', parameters('adminpassword'), ';')]",
+                            "type": "SQLAzure"
+                        }
+                    ],
+                    "appSettings": [
+                        {
+                            "name": "LoadBalancer.UseRedis",
+                            "value": "[if(not(equals(parameters('orchestratorInstances'),1)),'true','false')]"
+                        },
+                        {
+                            "name": "LoadBalancer.Redis.ConnectionString",
+                            "value": "[if(not(equals(parameters('orchestratorInstances'),1)),concat(reference(variables('redisid'), '2018-03-01').hostName,':',variables('redisPort'),',password=',listKeys(variables('redisid'), '2018-03-01').primaryKey,',ssl=',variables('enableNonSslPort'),',abortConnect=False'),json('null'))]"
+                        },
+                        {
+                            "name": "LoadBalancer.SignalR.UseRedisScaleout",
+                            "value": "[if(not(equals(parameters('orchestratorInstances'),1)),'true','false')]"
+                        },
+                        {
+                            "name": "LoadBalancer.SignalR.RedisScaleout.ConnectionString",
+                            "value": "[if(not(equals(parameters('orchestratorInstances'),1)),concat(reference(variables('redisid'), '2018-03-01').hostName,':',variables('redisPort'),',password=',listKeys(variables('redisid'), '2018-03-01').secondaryKey,',ssl=',variables('enableNonSslPort'),',abortConnect=False'),json('null'))]"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsight'))).InstrumentationKey]"
+                        },
+                        {
+                            "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                            "value": "~2"
+                        },
+                        {
+                            "name": "DiagnosticServices_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "APPINSIGHTS_PROFILERFEATURE_VERSION",
+                            "value": "1.0.0"
+                        },
+                        {
+                            "name": "APPINSIGHTS_SNAPSHOTFEATURE_VERSION",
+                            "value": "1.0.0"
+                        },
+                        {
+                            "name": "InstrumentationEngine_EXTENSION_VERSION",
+                            "value": "~1"
+                        },
+                        {
+                            "name": "SnapshotDebugger_EXTENSION_VERSION",
+                            "value": "~1"
+                        },
+                        {
+                            "name": "XDT_MicrosoftApplicationInsights_BaseExtensions",
+                            "value": "~1"
+                        },
+                        {
+                            "name": "XDT_MicrosoftApplicationInsights_Mode",
+                            "value": "recommended"
+                        },
+                        {
+                            "name": "NuGet.Packages.ApiKey",
+                            "value": "[variables('apiKey')]"
+                        },
+                        {
+                            "name": "NuGet.Activities.ApiKey",
+                            "value": "[variables('activitiesApiKey')]"
+                        },
+                        {
+                            "name": "NuGet.Packages.Path",
+                            "value": "~/NuGetPackages"
+                        },
+                        {
+                            "name": "NuGet.Activities.Path",
+                            "value": "~/NuGetPackages/Activities"
+                        },
+                        {
+                            "name": "NuGet.Repository.Type",
+                            "value": "[if(contains(parameters('orchestratorVersion'),'19'),'Composite',json('null'))]"
+                        },
+                        {
+                            "name": "Storage.Type",
+                            "value": "[if(contains(parameters('orchestratorVersion'),'19'),'Azure',json('null'))]"
+                        },
+                        {
+                            "name": "Storage.Location",
+                            "value": "[if(contains(parameters('orchestratorVersion'),'19'),concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(variables('storageid'), '2019-04-01').keys[0].value,';',variables('endpointSuffix')),json('null'))]"
+                        },
+                        {
+                            "name": "Auth.Cookie.Expire",
+                            "value": "30"
+                        },
+                        {
+                            "name": "AcceptedRootUrls",
+                            "value": "http://localhost:6234"
+                        },
+                        {
+                            "name": "Auth.Password.DefaultExpirationDays",
+                            "value": "0"
+                        },
+                        {
+                            "name": "Tenant.Registration.Enabled",
+                            "value": "false"
+                        },
+                        {
+                            "name": "OrganizationUnit.Enabled",
+                            "value": "false"
+                        },
+                        {
+                            "name": "CustomTitle",
+                            "value": ""
+                        },
+                        {
+                            "name": "ExternalAuth.AzureAD.Enabled",
+                            "value": "false"
+                        },
+                        {
+                            "name": "ExternalAuth.AzureAD.ApplicationId",
+                            "value": ""
+                        },
+                        {
+                            "name": "ExternalAuth.AzureAD.RedirectUri",
+                            "value": ""
+                        },
+                        {
+                            "name": "ExternalAuth.Saml2.Enabled",
+                            "value": "false"
+                        }
+                    ]
+                },
+                "enabled": true
+            },
+            "resources": [
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "MSDeploy",
+                    "type": "Extensions",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites/', variables('appName'))]",
+                        "[concat('Microsoft.Sql/servers/', variables('SQLServerName'), '/databases/', variables('dbName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+                    ],
+                    "properties": {
+                        "packageUri": "[variables('orchestratorLink')]",
+                        "dbType": "SQL",
+                        "connectionString": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', variables('SQLServerName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('dbName'), ';User Id=', parameters('adminusername'), '@', variables('SQLServerName'), ';Password=', parameters('adminpassword'), ';')]",
+                        "setParameters": {
+                            "IIS Web Application Name": "variables('appName')",
+                            "databaseEnableAutomaticMigrations": "true",
+                            "machineKeyDecryption": "AES",
+                            "machineKeyDecryptionKey": "[variables('machineKey')]",
+                            "machineKeyValidation": "HMACSHA256",
+                            "machineKeyValidationKey": "[variables('validationMachineKey')]",
+                            "EncryptionKey": "[variables('encriptionKey')]",
+                            "apiKey": "[variables('apiKey')]",
+                            "activitiesApiKey": "[variables('activitiesApiKey')]"
+                        }
+                    }
+                },
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "connectionstrings",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', variables('appName'))]",
+                        "[concat('Microsoft.Sql/servers/', variables('SQLServerName'), '/databases/', variables('dbName'))]",
+                        "[concat('Microsoft.Web/Sites/', variables('appName'), '/Extensions/MSDeploy')]"
+                    ],
+                    "properties": {
+                        "Default": {
+                            "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', variables('SQLServerName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('dbName'), ';User Id=', parameters('adminusername'), '@', variables('SQLServerName'), ';Password=', parameters('adminpassword'), ';')]",
+                            "type": "SQLAzure"
+                        }
+                    }
+                },
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "web",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites/', variables('appName'))]",
+                        "[concat('Microsoft.Web/Sites/', variables('appName'), '/Extensions/MSDeploy')]"
+                    ],
+                    "properties": {
+                        "phpVersion": "off",
+                        "netFrameworkVersion": "v4.5",
+                        "use32BitWorkerProcess": "true",
+                        "webSocketsEnabled": true,
+                        "alwaysOn": "true",
+                        "httpLoggingEnabled": true,
+                        "logsDirectorySizeLimit": 40
+                    }
+                }
+            ]
+        },
+        {
+            "condition": "[greaterOrEquals(parameters('orchestratorInstances'),2)]",
+            "apiVersion": "2015-04-01",
+            "name": "[concat(variables('appServicePlanName'), '-scaleset')]",
+            "type": "microsoft.insights/autoscalesettings",
+            "location": "[variables('appInsightsRegion')]",
+            "tags": {
+                "[concat('hidden-link:', '/subscriptions/', subscription().subscriptionId,'/resourcegroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', variables('appServicePlanName'))]": "Resource"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+            ],
+            "properties": {
+                "profiles": [
+                    {
+                        "name": "Default",
+                        "capacity": {
+                            "minimum": "[parameters('orchestratorInstances')]",
+                            "maximum": "15",
+                            "default": "[parameters('orchestratorInstances')]"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "CpuPercentage",
+                                    "metricResourceUri": "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT10M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 80
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT10M"
+                                }
+                            },
+                            {
+                                "metricTrigger": {
+                                    "metricName": "CpuPercentage",
+                                    "metricResourceUri": "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT1H",
+                                    "timeAggregation": "Average",
+                                    "operator": "LessThan",
+                                    "threshold": 60
+                                },
+                                "scaleAction": {
+                                    "direction": "Decrease",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT1H"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "enabled": true,
+                "name": "[concat(variables('appServicePlanName'), '-scaleset')]",
+                "targetResourceUri": "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+            }
+        },
+        {
+            "apiVersion": "2018-05-01-preview",
+            "name": "[variables('appInsight')]",
+            "type": "microsoft.insights/components",
+            "location": "[variables('appInsightsRegion')]",
+            "tags": {
+                "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('appName'))]": "Resource"
+            },
+            "properties": {
+                "applicationId": "[variables('appName')]"
+            }
+        },
+        {
+            "condition": "[greaterOrEquals(parameters('orchestratorInstances'),2)]",
+            "apiVersion": "2018-03-01",
+            "name": "[variables('redisCacheName')]",
+            "type": "Microsoft.Cache/Redis",
+            "location": "[variables('location')]",
+            "properties": {
+                "enableNonSslPort": "[variables('enableNonSslPort')]",
+                "sku": {
+                    "capacity": "[variables('redisCacheCapacity')]",
+                    "family": "[variables('redisCacheFamily')]",
+                    "name": "[variables('redisCacheSKU')]"
+                }
+            },
+            "resources": [
+                {
+                    "condition": "[greaterOrEquals(parameters('orchestratorInstances'),2)]",
+                    "apiVersion": "2017-05-01-preview",
+                    "type": "Microsoft.Cache/redis/providers/diagnosticsettings",
+                    "name": "[concat(variables('redisCacheName'),'/Microsoft.Insights/','redisinsight')]",
+                    "location": "[variables('location')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.Cache/Redis/', variables('redisCacheName'))]"
+                    ],
+                    "properties": {
+                        "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]",
+                        "logs": [],
+                        "metrics": [
+                            {
+                                "timeGrain": "AllMetrics",
+                                "enabled": "[variables('diagnosticsEnabled')]",
+                                "retentionPolicy": {
+                                    "days": 90,
+                                    "enabled": "[variables('diagnosticsEnabled')]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "outputs": {
+        "OrchestratorURL": {
+            "value": "[concat('https://',variables('appName'),'.azurewebsites.net')]",
+            "type": "string"
+        },
+        "OrchestratorDefaultCredentials": {
+            "value": "[concat('User: admin','Password: 890iop')]",
+            "type": "string"
+        },
+        "OrchestratorSQLUser": {
+            "value": "[parameters('adminusername')]",
+            "type": "string"
+        },
+        "OrchestratorSQLPass": {
+            "value": "[parameters('adminpassword')]",
+            "type": "string"
+        },
+        "sqlServerName": {
+            "value": "[reference(resourceId('Microsoft.Sql/servers', variables('SQLServerName'))).fullyQualifiedDomainName]",
+            "type": "string"
+        },
+        "databaseName": {
+            "value": "[variables('dbName')]",
+            "type": "string"
+        },
+        "storageEndpoint": {
+            "type": "object",
+            "value": "[reference(variables('storageAccountName')).primaryEndpoints]"
+        }
+    }
+}
