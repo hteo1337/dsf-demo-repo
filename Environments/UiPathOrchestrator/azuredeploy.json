@@ -604,8 +604,8 @@
             "type": "string"
         },
         "storageEndpoint": {
-            "type": "object",
-            "value": "[reference(variables('storageAccountName')).primaryEndpoints]"
+            "type": "string",
+            "value": "[concat('https://',variables('storageAccountName'),'.blob.core.windows.net')]"
         }
     }
 }
