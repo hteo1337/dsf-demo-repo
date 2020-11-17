@@ -1,7 +1,19 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "RobotType": {
+            "type": "string",
+            "defaultValue": "Attended",
+            "allowedValues": [
+                "Unattended",
+                "Development",
+                "Attended"
+            ],
+            "metadata": {
+                "description": "Robot Type"
+            }
+        },
         "adminusername": {
             "type": "String",
             "metadata": {
@@ -13,15 +25,27 @@
             "metadata": {
                 "description": "VMs Admin password"
             }
+        },
+        "virtualMachineSize": {
+            "defaultValue": "Standard_B2s",
+            "allowedValues": [
+                "Standard_B2s",
+                "Standard_F4s",
+                "Standard_A2_v2"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "VM tier"
+            }
         }
     },
     "variables": {
         "location": "[resourceGroup().location]",
-        "vm-prefix": "[toLower(uniqueString(resourceGroup().id))]",
-        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/Install-UiRobot.ps1",
-        "vmName": "[variables('vm-prefix')]",
+        "vm-prefix": "[parameters('adminusername')]",
+        "dnsSuffix": "[concat(variables('vm-prefix'),'-dns')]",
+        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/Scripts/Install-UiRobot.ps1",
+        "vmName": "[concat(variables('vm-prefix'),'-uip')]",
         "osDiskType": "StandardSSD_LRS",
-        "virtualMachineSize": "Standard_D4s_v3",
         "publicIpAddressName": "[concat(variables('vm-prefix'), '-pip')]",
         "networkInterfaceName": "[concat(variables('vm-prefix'),'-nic')]",
         "virtualNetworkName": "dsf-project-test-vnet",
@@ -34,7 +58,7 @@
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
         "scriptFileName": "[variables('scriptFileBreakString')[0]]",
-        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File  ', variables('scriptFileName'))]"
+        "installBot": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-RobotType',' ',parameters('RobotType'))]"
     },
     "resources": [
         {
@@ -121,7 +145,7 @@
             "properties": {
                 "publicIPAllocationMethod": "Dynamic",
                 "dnsSettings": {
-                    "domainNameLabel": "[concat('a',toLower(uniqueString(resourceGroup().id)))]"
+                    "domainNameLabel": "[variables('dnsSuffix')]"
                 }
             }
         },
@@ -135,7 +159,7 @@
               },
             "properties": {
                 "hardwareProfile": {
-                    "vmSize": "[variables('virtualMachineSize')]"
+                    "vmSize": "[parameters('virtualMachineSize')]"
                 },
                 "storageProfile": {
                     "osDisk": {
