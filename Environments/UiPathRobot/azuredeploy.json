@@ -42,7 +42,7 @@
     "variables": {
         "location": "[resourceGroup().location]",
         "vm-prefix": "[parameters('adminusername')]",
-        "dnsSuffix": "[concat(variables('vm-prefix'),'-dns')]",
+        "dnsSuffix": "[concat('az',toLower(uniqueString(resourceGroup().id)))]",
         "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/DSF-Certification-ARMSkeleton/master/Environments/Scripts/Install-UiRobot.ps1",
         "vmName": "[concat(variables('vm-prefix'),'-uip')]",
         "osDiskType": "StandardSSD_LRS",
