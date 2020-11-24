@@ -14,6 +14,20 @@
                 "description": "VMs Admin password"
             }
         },
+        "images": {
+            "type": "string",
+            "metadata": {
+                "description":"Images from Shared Gallery"
+            },
+            "allowedValues":[
+                "Insights-20.10.0",
+                "Insights-2019.10.6",
+                "Orchestrator",
+                "Insights",
+                "Orchestrator"
+            ],
+            "defaultValue": "Insights"
+        },
         "virtualMachineSize": {
             "defaultValue": "Standard_B2s",
             "allowedValues": [
@@ -41,7 +55,9 @@
         "subnetName": "[concat(variables('virtualNetworkName'), '-subnet')]",
         "networkSecurityGroupName": "default-NSG",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
-        "imageRef": "/subscriptions/99f4fcd9-845e-420b-8f7b-bc9f4e5fbde3/resourceGroups/DevTest-ProductSupport-RG/providers/Microsoft.Compute/galleries/USProductSupport/images/Insights/versions/20.10.0"
+        "TemplateImage": "[parameters('images')]",
+        "galleryName": "USProductSupport",
+        "imageRef": "[resourceId('Microsoft.Compute/galleries/images/versions', variables('galleryName'), variables('TemplateImage'), 'latest')]"
     },
     "resources": [
         {
@@ -135,7 +151,7 @@
         {
             "type": "Microsoft.Compute/virtualMachines",
             "name": "[variables('vmName')]",
-            "apiVersion": "2018-10-01",
+            "apiVersion": "2019-03-01",
             "location": "[variables('location')]",
             "tags": {
                 "AlwaysPoweredOn": "true"
