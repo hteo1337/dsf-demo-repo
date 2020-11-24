@@ -89,7 +89,7 @@
                 "imageVersion": "20.10.2"
             }
         },
-        "imageRef": "[resourceId('99f4fcd9-845e-420b-8f7b-bc9f4e5fbde3','DevTest-ProductSupport-RG','/providers/Microsoft.Compute/galleries/images/versions',variables('galleryName'), variables('TemplateImage')[parameters('images')].imageName, variables('TemplateImage')[parameters('images')].imageVersion)]"
+        "imageRef": "[resourceId('DevTest-ProductSupport-RG','Microsoft.Compute/galleries/images/versions',variables('galleryName'), variables('TemplateImage')[parameters('images')].imageName, variables('TemplateImage')[parameters('images')].imageVersion)]"
     },
     "resources": [
         {
