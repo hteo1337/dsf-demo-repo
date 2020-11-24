@@ -23,8 +23,7 @@
                 "Insights-20.10.0",
                 "Insights-2019.10.6",
                 "Orchestrator",
-                "Insights",
-                "Orchestrator"
+                "Insights"
             ],
             "defaultValue": "Insights"
         },
@@ -39,10 +38,21 @@
             "metadata": {
                 "description": "VM tier"
             }
+        },
+        "location": {
+            "defaultValue": "eastus",
+            "allowedValues": [
+                "eastus",
+                "westeurope"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Resources location"
+            }
         }
     },
     "variables": {
-        "location": "[resourceGroup().location]",
+        "location": "[parameters('location')]",
         "vm-prefix": "[toLower(uniqueString(resourceGroup().id))]",
         "dnsSuffix": "[concat('az',toLower(uniqueString(resourceGroup().id)))]",
         "vmName": "[variables('vm-prefix')]",
@@ -55,10 +65,31 @@
         "subnetName": "[concat(variables('virtualNetworkName'), '-subnet')]",
         "networkSecurityGroupName": "default-NSG",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
-        "TemplateImage": "[parameters('images')]",
-        "galleryNameSupport": "USProductSupport",
-        "galleryName": "DSFSharedImageGalery",
-        "imageRef": "[resourceId('Microsoft.Compute/galleries/images/versions', variables('galleryName'), variables('TemplateImage'), 'latest')]"
+        "galleryName": "USProductSupport",
+        "TemplateImage":  {
+            "Insights-20.10.0": {
+                "imageName": "Insights",
+                "imageVersion": "20.10.0"
+            },
+            "Insights-2019.10.6": {
+                "imageName": "Insights",
+                "imageVersion": "2019.10.6"
+            },
+            "Orchestrator-18.4.8": {
+                "imageName": "Orchestrator",
+                "imageVersion": "18.4.8"
+            },
+            "Orchestrator-19.10.21": {
+                "imageName": "Orchestrator",
+                "imageVersion": "19.10.21"
+            },
+            "Orchestrator-20.10.2": {
+                "imageName": "Orchestrator",
+                "imageVersion": "20.10.2"
+            }
+        },
+        "imageRef": "[resourceId('/subscriptions/99f4fcd9-845e-420b-8f7b-bc9f4e5fbde3/resourceGroups/DevTest-ProductSupport-RG/providers/Microsoft.Compute/galleries/images/versions', 
+        variables('galleryName'), variables('TemplateImage')[parameters('images')].imageName, variables('TemplateImage')[parameters('images')].imageVersion)]"
     },
     "resources": [
         {
