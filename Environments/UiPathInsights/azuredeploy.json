@@ -22,8 +22,9 @@
             "allowedValues":[
                 "Insights-20.10.0",
                 "Insights-2019.10.6",
-                "Orchestrator",
-                "Insights"
+                "Orchestrator-18.4.8",
+                "Orchestrator-19.10.21",
+                "Orchestrator-20.10.2"
             ],
             "defaultValue": "Insights"
         },
