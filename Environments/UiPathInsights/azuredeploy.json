@@ -56,7 +56,8 @@
         "networkSecurityGroupName": "default-NSG",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
         "TemplateImage": "[parameters('images')]",
-        "galleryName": "USProductSupport",
+        "galleryNameSupport": "USProductSupport",
+        "galleryName": "DSFSharedImageGalery",
         "imageRef": "[resourceId('Microsoft.Compute/galleries/images/versions', variables('galleryName'), variables('TemplateImage'), 'latest')]"
     },
     "resources": [
