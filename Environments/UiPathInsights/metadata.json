@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "UiPathInsights",
+    "description": "This template creates a VM with UiPath Insights installed. ",
+    "githubUsername": "maxlilo",
+    "summary": "Deploys UiPath Insights instance as an environment in a DevTest Lab."
+}

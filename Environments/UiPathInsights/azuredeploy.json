@@ -1,0 +1,194 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminusername": {
+            "type": "String",
+            "metadata": {
+                "description": "VMs Admin username"
+            }
+        },
+        "adminpassword": {
+            "type": "String",
+            "metadata": {
+                "description": "VMs Admin password"
+            }
+        },
+        "virtualMachineSize": {
+            "defaultValue": "Standard_B2s",
+            "allowedValues": [
+                "Standard_B2s",
+                "Standard_F4s",
+                "Standard_A2_v2"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "VM tier"
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "vm-prefix": "[toLower(uniqueString(resourceGroup().id))]",
+        "dnsSuffix": "[concat('az',toLower(uniqueString(resourceGroup().id)))]",
+        "vmName": "[variables('vm-prefix')]",
+        "osDiskType": "StandardSSD_LRS",
+        "publicIpAddressName": "[concat(variables('vmName'), '-pip')]",
+        "networkInterfaceName": "[concat(variables('vmName'),'-nic')]",
+        "virtualNetworkName": "dsf-project-test-vnet",
+        "addressPrefix": "10.0.0.0/16",
+        "subnetPrefix": "10.0.0.0/24",
+        "subnetName": "[concat(variables('virtualNetworkName'), '-subnet')]",
+        "networkSecurityGroupName": "default-NSG",
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+        "imageRef": "/subscriptions/99f4fcd9-845e-420b-8f7b-bc9f4e5fbde3/resourceGroups/DevTest-ProductSupport-RG/providers/Microsoft.Compute/galleries/USProductSupport/images/Insights/versions/20.10.0"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-08-01",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-3389",
+                        "properties": {
+                            "priority": 1000,
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "destinationPortRange": "3389",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2018-11-01",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-11-01",
+            "name": "[variables('networkInterfaceName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIpAddressName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2018-11-01",
+            "location": "[variables('location')]",
+            "name": "[variables('publicIpAddressName')]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsSuffix')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[variables('vmName')]",
+            "apiVersion": "2018-10-01",
+            "location": "[variables('location')]",
+            "tags": {
+                "AlwaysPoweredOn": "true"
+              },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "id": "[variables('imageRef')]"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "adminusername": "[parameters('adminusername')]",
+                    "adminpassword": "[parameters('adminpassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVmAgent": true
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "adminusername": {
+            "type": "String",
+            "value": "[parameters('adminusername')]"
+        },
+        "adminpassword": {
+            "type": "String",
+            "value": "[parameters('adminpassword')]"
+        },
+        "vmDNS": {
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
+            "type": "string"
+        }
+    }
+}
