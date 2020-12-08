@@ -15,9 +15,8 @@
       }
     },
     "virtualMachineSize": {
-      "defaultValue": "Standard_B2s",
+      "defaultValue": "Standard_B4ms",
       "allowedValues": [
-        "Standard_B2s",
         "Standard_B4ms",
         "Standard_F4s",
         "Standard_A2_v2"
