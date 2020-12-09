@@ -28,6 +28,7 @@
     },
     "location": {
       "type": "string",
+      "defaultValue": "northeurope",
       "allowedValues": [
         "northeurope",
         "westeurope",
