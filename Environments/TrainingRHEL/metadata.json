@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "TrainingRHEL",
+    "description": "This templates create blank vm images for orchestrator and rhel",
+    "githubUsername": "hteo1337",
+    "summary": "This templates create blank vm images for orchestrator and rhel"
+}

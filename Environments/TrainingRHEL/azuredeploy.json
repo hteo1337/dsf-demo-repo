@@ -25,10 +25,24 @@
       "metadata": {
         "description": "VM tier"
       }
+    },
+    "location": {
+      "type": "string",
+      "allowedValues": [
+        "northeurope",
+        "westeurope",
+        "eastus",
+        "japaneast",
+        "eastasia",
+        "westus",
+        "francecentral",
+        "ukwest"
+
+      ]
     }
   },
   "variables": {
-    "location": "[resourceGroup().location]",
+    "location": "[parameters('location')]",
     "vm-prefix": "[toLower(uniqueString(resourceGroup().id))]",
     "dnsSuffix": "[concat('az',toLower(uniqueString(resourceGroup().id)))]",
     "vmName": "[variables('vm-prefix')]",
@@ -324,7 +338,7 @@
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
       "type": "string"
     },
-    "ELKVMPrivateIPRHEL": {
+    "RHELprivateIP": {
       "type": "string",
       "value": "[concat(reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-0'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-1'))).ipConfigurations[0].properties.privateIPAddress,' ; ',reference(resourceId('Microsoft.Network/networkInterfaces/', concat(variables('elkRHELNicNamePrefix'),'-2'))).ipConfigurations[0].properties.privateIPAddress)]"
     }
