@@ -1,0 +1,281 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vmName": {
+            "type": "String",
+            "metadata": {
+                "description": "Unique VM prefix name"
+            },
+            "minLength": 4,
+            "maxLength": 10
+        },
+        "adminusername": {
+            "type": "String",
+            "metadata": {
+                "description": "VMs Admin username"
+            },
+            "minLength": 4,
+            "maxLength": 10
+        },
+        "adminpassword": {
+            "type": "String",
+            "metadata": {
+                "description": "VMs Admin password"
+            },
+            "minLength": 6
+        },
+        "licenseCode": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "ProcessMining license"
+            }
+        },
+        "environment": {
+            "defaultValue": "POV",
+            "allowedValues": [
+                "POV",
+                "PILOT",
+                "BOOTCAMP"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Resources size based on environment type"
+            }
+        },
+        "location": {
+            "defaultValue": "eastus",
+            "allowedValues": [
+                "eastus",
+                "westeurope"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Resources location"
+            }
+        }
+    },
+    "variables": {
+        "location": "[parameters('location')]",
+        "vmName": "[toLower(parameters('vmName'))]",
+        "dnsSuffix": "[concat(variables('vmName'),toLower(uniqueString(resourceGroup().id)))]",
+        "osDiskType": "StandardSSD_LRS",
+        "publicIpAddressName": "[concat(variables('vmName'), '-pip')]",
+        "networkInterfaceName": "[concat(variables('vmName'),'-nic')]",
+        "virtualNetworkName": "dsf-project-test-vnet",
+        "addressPrefix": "10.0.0.0/16",
+        "subnetPrefix": "10.0.0.0/24",
+        "subnetName": "[concat(variables('virtualNetworkName'), '-subnet')]",
+        "networkSecurityGroupName": "default-NSG",
+        "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+        "imageName": "ProcessMining",
+		"galleryName": "DSF_POC",
+        "imageVersion": "1.0.0",
+		"imageRef": "[resourceId('DSF-Presales-RG','Microsoft.Compute/galleries/images/versions',variables('galleryName'), variables('imageName'), variables('imageVersion'))]",
+        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/bootstrap.ps1",
+        "scriptUriNamePieces": "[split(variables('scriptUriBase'), '/')]",
+        "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
+        "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
+        "scriptFileName": "[variables('scriptFileBreakString')[0]]",
+        "configurePM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-licenseCode',' ',parameters('licenseCode'))]",
+        "pmVM":  {
+            "POV": {
+                "virtualMachineSize": "Standard_D4s_v4",
+                "diskSizeGB": 128
+            },
+            "PILOT": {
+                "virtualMachineSize": "Standard_D4s_v4",
+                "diskSizeGB": 128
+            },
+            "BOOTCAMP": {
+                "virtualMachineSize": "Standard_D8s_v4",
+                "diskSizeGB": 128
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-08-01",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-3389",
+                        "properties": {
+                            "priority": 1000,
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "destinationPortRange": "3389",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*"
+                        }
+                    },
+                    {
+                        "name": "default-allow-443",
+                        "properties": {
+                            "priority": 1010,
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "destinationPortRange": "443",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*"
+			}
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2018-11-01",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-11-01",
+            "name": "[variables('networkInterfaceName')]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIpAddressName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2018-11-01",
+            "location": "[variables('location')]",
+            "name": "[variables('publicIpAddressName')]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('dnsSuffix')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[variables('vmName')]",
+            "apiVersion": "2019-03-01",
+            "location": "[variables('location')]",
+            "tags": {
+                "AlwaysPoweredOn": "true"
+              },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('pmVM')[parameters('environment')].virtualMachineSize]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "fromImage",
+                        "diskSizeGB": "[variables('pmVM')[parameters('environment')].diskSizeGB]",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "id": "[variables('imageRef')]"
+                    }
+                },
+                
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "[variables('vmName')]",
+                    "adminusername": "[parameters('adminusername')]",
+                    "adminpassword": "[parameters('adminpassword')]",
+                    "windowsConfiguration": {
+                        "enableAutomaticUpdates": true,
+                        "provisionVmAgent": true
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('vmName'),'/CustomScriptExtension')]",
+            "apiVersion": "2015-06-15",
+            "location": "[variables('location')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.7",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": "[split(variables('scriptUriBase'), ' ')]"
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[variables('configurePM')]"
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "adminusername": {
+            "type": "String",
+            "value": "[parameters('adminusername')]"
+        },
+        "adminpassword": {
+            "type": "String",
+            "value": "[parameters('adminpassword')]"
+        },
+        "vmDNS": {
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
+            "type": "string"
+        }
+    }
+}

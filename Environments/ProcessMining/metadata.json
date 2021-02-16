@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "ProcessMining",
+    "description": "This template creates a VM with ProcessMining installed. ",
+    "githubUsername": "hteo1337",
+    "summary": "Deploys ProcessMining instance as an IaaS environment in Azure using a clone image."
+}
