@@ -2,14 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "vmName": {
-            "type": "String",
-            "metadata": {
-                "description": "Unique VM prefix name"
-            },
-            "minLength": 4,
-            "maxLength": 10
-        },
         "adminusername": {
             "type": "String",
             "metadata": {
@@ -58,8 +50,8 @@
     },
     "variables": {
         "location": "[parameters('location')]",
-        "vmName": "[toLower(parameters('vmName'))]",
-        "dnsSuffix": "[concat(variables('vmName'),toLower(uniqueString(resourceGroup().id)))]",
+        "vmName": "[toLower(uniqueString(resourceGroup().id))]",
+        "dnsSuffix": "[concat('pm',toLower(uniqueString(resourceGroup().id)))]",
         "osDiskType": "StandardSSD_LRS",
         "publicIpAddressName": "[concat(variables('vmName'), '-pip')]",
         "networkInterfaceName": "[concat(variables('vmName'),'-nic')]",
