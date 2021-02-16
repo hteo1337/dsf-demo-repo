@@ -6,16 +6,13 @@
             "type": "String",
             "metadata": {
                 "description": "VMs Admin username"
-            },
-            "minLength": 4,
-            "maxLength": 10
+            }
         },
         "adminpassword": {
             "type": "String",
             "metadata": {
                 "description": "VMs Admin password"
-            },
-            "minLength": 6
+            }
         },
         "licenseCode": {
             "defaultValue": "",
