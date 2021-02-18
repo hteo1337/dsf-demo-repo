@@ -70,15 +70,15 @@
         "configurePM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-licenseCode',' ',parameters('licenseCode'))]",
         "pmVM":  {
             "POV": {
-                "virtualMachineSize": "Standard_D4s_v4",
+                "virtualMachineSize": "Standard_B4ms",
                 "diskSizeGB": 128
             },
             "PILOT": {
-                "virtualMachineSize": "Standard_D4s_v4",
+                "virtualMachineSize": "Standard_B4ms",
                 "diskSizeGB": 128
             },
             "BOOTCAMP": {
-                "virtualMachineSize": "Standard_D8s_v4",
+                "virtualMachineSize": "Standard_B4ms",
                 "diskSizeGB": 128
             }
         }
