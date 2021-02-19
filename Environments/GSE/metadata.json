@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "DSF-GSE",
+    "description": "This template creates a VM with DSF Demos installed. ",
+    "githubUsername": "hteo1337",
+    "summary": "Deploys DSF Demos instance as an IaaS environment in Azure using a clone image."
+}
