@@ -5,13 +5,14 @@ Param (
     [Parameter(Mandatory = $false)]
     [string] $username,
     [Parameter(Mandatory = $false)]
-    [string] $domain="DSF",
+    [string] $domain,
     [Parameter(Mandatory = $false)]
     [string] $robotName
 
 )
 if (Test-Path -Path $modernFolderRobotsExe) {
-    & $modernFolderRobotsExe -u $username -d $domain -r $robotName
+    
+    & $modernFolderRobotsExe -u $username  -r $robotName If ($domain) {-d $domain }
 }
 
 Remove-Item "C:\Temp" -Force -Recurse
