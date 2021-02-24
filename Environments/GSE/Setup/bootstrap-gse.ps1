@@ -15,4 +15,4 @@ if (Test-Path -Path $modernFolderRobotsExe) {
     & $modernFolderRobotsExe -u $username  -r $robotName If ($domain) {-d $domain }
 }
 
-Remove-Item "C:\Temp" -Force -Recurse
+# Remove-Item "C:\Temp" -Force -Recurse
