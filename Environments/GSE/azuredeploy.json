@@ -242,7 +242,7 @@
                     "fileUris": [
                         "[split(variables('robotProvisionerURI'), ' ')]"
                     ],
-                    "commandToExecute": "[variables('robotProvisionerCMD')]"
+                    "commandToExecute": ""
                 },
                 "protectedSettings": {
                     "storageAccountName": "",
