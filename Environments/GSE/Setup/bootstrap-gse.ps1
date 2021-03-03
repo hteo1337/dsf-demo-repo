@@ -1,7 +1,7 @@
 [CmdletBinding()]
 Param (
     [Parameter(Mandatory = $false)]
-    [string] $modernFolderRobotsExe="C:\Temp\robotProvisioner.exe",
+    [string] $modernFolderRobotsExe="C:\Temp\ModernRobotProvisioning.exe",
     [Parameter(Mandatory = $false)]
     [string] $username,
     [Parameter(Mandatory = $false)]

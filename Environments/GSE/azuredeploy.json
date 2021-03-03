@@ -240,14 +240,14 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[split(variables('robotProvisionerURI'), ' ')]"
+                        "[split(variables('scriptUriBase'), ' ')]"
                     ],
-                    "commandToExecute": ""
+                    "commandToExecute": "[variables('configureVM')]"
                 },
                 "protectedSettings": {
                     "storageAccountName": "",
                     "storageAccountKey": "",
-                    "managedIdentity": { "clientId": "8ecf666a-2bf1-4f99-a738-027487b488eb" }
+                    "managedIdentity": { }
                 }
             },
             "dependsOn": [
