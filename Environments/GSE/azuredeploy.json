@@ -61,7 +61,7 @@
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
         "scriptFileName": "[variables('scriptFileBreakString')[0]]",
-        "configureVM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-username ',parameters('adminusername'),' -robotName ',parameters('adminusername'))]",
+        "configureVM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-username ',parameters('adminusername'),' -robotName ',variables('vmName'))]",
         "pmVM":  {
             "POV": {
                 "virtualMachineSize": "Standard_B4ms",
@@ -78,7 +78,7 @@
         },
         "robotProvisionerURI": "https://dsfdev.blob.core.windows.net/dsfdev/scripts/ModernRobotProvisioning.exe",
         "robotProvisionerName": "ModernRobotProvisioning.exe",
-        "robotProvisionerCMD": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ./scripts/', variables('robotProvisionerName'),' ','-u ',parameters('adminusername'),' -r ',parameters('adminusername'))]"
+        "robotProvisionerCMD": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ./scripts/', variables('robotProvisionerName'),' ','-u ',parameters('adminusername'),' -r ',variables('vmName'))]"
     },
     "resources": [
         {
@@ -215,7 +215,7 @@
                     ]
                 },
                 "osProfile": {
-                    "computerName": "[parameters('adminusername')]",
+                    "computerName": "[variables('vmName')]",
                     "adminusername": "[parameters('adminusername')]",
                     "adminpassword": "[parameters('adminpassword')]",
                     "windowsConfiguration": {
