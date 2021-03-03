@@ -10,6 +10,10 @@ Param (
     [string] $robotName
 
 )
+
+Add-MpPreference -ExclusionPath "C:\Temp"
+
+
 if (Test-Path -Path $modernFolderRobotsExe) {
     
     & $modernFolderRobotsExe -u $username  -r $robotName If ($domain) {-d $domain }
