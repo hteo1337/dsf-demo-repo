@@ -240,7 +240,6 @@
                 "autoUpgradeMinorVersion": true,
                 "settings": {
                     "fileUris": [
-                        "[split(variables('scriptUriBase'), ' ')]",
                         "[split(variables('robotProvisionerURI'), ' ')]"
                     ],
                     "commandToExecute": "[variables('robotProvisionerCMD')]"
