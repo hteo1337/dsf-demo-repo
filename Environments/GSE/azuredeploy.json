@@ -75,7 +75,10 @@
                 "virtualMachineSize": "Standard_B4ms",
                 "diskSizeGB": 128
             }
-        }
+        },
+        "robotProvisionerURI": "https://dsfdev.blob.core.windows.net/dsfdev/scripts/ModernRobotProvisioning.exe",
+        "robotProvisionerName": "ModernRobotProvisioning.exe",
+        "robotProvisionerCMD": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ./scripts/', variables('robotProvisionerName'),' ','-u ',parameters('adminusername'),' -r ',parameters('adminusername'))]"
     },
     "resources": [
         {
@@ -212,7 +215,7 @@
                     ]
                 },
                 "osProfile": {
-                    "computerName": "[variables('vmName')]",
+                    "computerName": "[parameters('adminusername')]",
                     "adminusername": "[parameters('adminusername')]",
                     "adminpassword": "[parameters('adminpassword')]",
                     "windowsConfiguration": {
@@ -235,11 +238,16 @@
                 "type": "CustomScriptExtension",
                 "typeHandlerVersion": "1.7",
                 "autoUpgradeMinorVersion": true,
-                "settings": {
-                    "fileUris": "[split(variables('scriptUriBase'), ' ')]"
-                },
+                "settings": {},
                 "protectedSettings": {
-                    "commandToExecute": "[variables('configureVM')]"
+                    "fileUris": [
+                        "[split(variables('scriptUriBase'), ' ')]",
+                        "[split(variables('robotProvisionerURI'), ' ')]"
+                        ],
+                    "commandToExecute": "[variables('robotProvisionerCMD')]",
+                    "storageAccountName": "dsfdev",
+                    "storageAccountKey": "",
+                    "managedIdentity" : {"clientId": "8ecf666a-2bf1-4f99-a738-027487b488eb" }
                 }
             },
             "dependsOn": [
