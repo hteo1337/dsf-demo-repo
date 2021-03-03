@@ -76,7 +76,7 @@
                 "diskSizeGB": 128
             }
         },
-        "robotProvisionerURI": "https://dsfdev.blob.core.windows.net/dsfdev/scripts/ModernRobotProvisioning.exe",
+        "robotProvisionerURI": "https://dsfdev.blob.core.windows.net/dsfdev/scripts/ModernRobotProvisioning.exe?sv=2019-10-10&st=2021-03-03T10%3A50%3A20Z&se=2021-03-04T10%3A50%3A20Z&sr=b&sp=r&sig=McVhbM6NYG4Y5tqAtkDA0OJ8h87KXSoHu1r5LqFej0k%3D",
         "robotProvisionerName": "ModernRobotProvisioning.exe",
         "robotProvisionerCMD": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ./scripts/', variables('robotProvisionerName'),' ','-u ',parameters('adminusername'),' -r ',variables('vmName'))]"
     },
