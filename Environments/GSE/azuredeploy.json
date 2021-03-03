@@ -239,15 +239,10 @@
                 "typeHandlerVersion": "1.7",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
-                    "fileUris": [
-                        "[split(variables('scriptUriBase'), ' ')]"
-                    ],
-                    "commandToExecute": "[variables('configureVM')]"
+                    "fileUris": "[split(variables('scriptUriBase'), ' ')]"
                 },
                 "protectedSettings": {
-                    "storageAccountName": "",
-                    "storageAccountKey": "",
-                    "managedIdentity": { }
+                    "commandToExecute": "[variables('configureVM')]"
                 }
             },
             "dependsOn": [
