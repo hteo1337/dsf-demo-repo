@@ -245,7 +245,7 @@
                     "commandToExecute": "[variables('robotProvisionerCMD')]"
                 },
                 "protectedSettings": {
-                    "storageAccountName": "dsfdev",
+                    "storageAccountName": "",
                     "storageAccountKey": "",
                     "managedIdentity": { "clientId": "8ecf666a-2bf1-4f99-a738-027487b488eb" }
                 }
