@@ -60,7 +60,7 @@ function Register-EventScript {
     ForEach-Object {
         New-ItemProperty -path "$_" -name Script -propertyType String -value $pathToScript -force 
         New-ItemProperty -path "$_" -name Parameters -propertyType String -value $scriptParameters -force
-        New-ItemProperty -path "$_" -name IsPowershell -propertyType DWord -value 1 -force
+        New-ItemProperty -path "$_" -name IsPowershell -propertyType DWord -value 0 -force
         New-ItemProperty -path "$_" -name ExecTime -propertyType QWord -value 0 -force
     }
 }
@@ -70,4 +70,4 @@ function Register-EventScript {
 
 # register the script twice
 # Register-EventScript -eventToRegister "Startup" -pathToScript "$currentLocation\ScriptToRun.ps1" -scriptParameters "OnStartup"
-Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe -dp" -scriptParameters "OnShutdown"
+Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe" -scriptParameters " -dp"
