@@ -70,4 +70,4 @@ function Register-EventScript {
 
 # register the script twice
 # Register-EventScript -eventToRegister "Startup" -pathToScript "$currentLocation\ScriptToRun.ps1" -scriptParameters "OnStartup"
-Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe" -scriptParameters " -dp"
+# Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe" -scriptParameters " -dp"
