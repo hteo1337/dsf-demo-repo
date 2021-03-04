@@ -78,7 +78,14 @@ function Task {
         [string] $path,
 
         [Parameter(Mandatory = $true)]
-        [string] $args
+        [string] $args,
+
+        [Parameter(Mandatory = $false)]
+        [string] $taskName="UiPathRobot",
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("provision", "deprovision")]
+        [string] $taskType="provision"
 
     )
 
@@ -93,11 +100,18 @@ function Task {
         -Argument "$args"
 
     # Set up trigger to launch action
-    $STTrigger = New-ScheduledTaskTrigger `
+    if ($taskType -eq "provision") {
+        $STTrigger = New-ScheduledTaskTrigger `
         -Once `
         -At ([DateTime]::Now.AddMinutes(1)) `
         -RepetitionInterval (New-TimeSpan -Minutes 2) `
         -RepetitionDuration (New-TimeSpan -Minutes 10)
+    } else {
+        $STTrigger = New-ScheduledTaskTrigger `
+        -Once `
+        -At ([DateTime]::Now.AddMinutes(1)) `
+    }
+    
 
     # Set up base task settings - NOTE: Win8 is used for Windows 10
     $STSettings = New-ScheduledTaskSettingsSet `
@@ -109,7 +123,7 @@ function Task {
         -StartWhenAvailable
 
     # Name of Scheduled Task
-    $STName = "UiPathRobot"
+    $STName = $taskName
 
     # Create Scheduled Task
     Register-ScheduledTask `
@@ -129,7 +143,7 @@ function Task {
     $TargetTask.Triggers[0].StartBoundary = [DateTime]::Now.ToString("yyyy-MM-dd'T'HH:mm:ss")
     $TargetTask.Triggers[0].EndBoundary = [DateTime]::Now.AddMinutes(3).ToString("yyyy-MM-dd'T'HH:mm:ss")
     $TargetTask.Settings.AllowHardTerminate = $True
-    #$TargetTask.Settings.DeleteExpiredTaskAfter = 'PT5S'
+    $TargetTask.Settings.DeleteExpiredTaskAfter = 'PT5S'
     $TargetTask.Settings.ExecutionTimeLimit = 'PT10M'
     $TargetTask.Settings.volatile = $False
 
@@ -138,5 +152,6 @@ function Task {
 
 }
 
-Task -Path $modernFolderRobotsExe -args " -dp"
-Task -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
+Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
+
+Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
