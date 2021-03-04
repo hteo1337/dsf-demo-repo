@@ -219,7 +219,7 @@
                     "adminusername": "[parameters('adminusername')]",
                     "adminpassword": "[parameters('adminpassword')]",
                     "windowsConfiguration": {
-                        "enableAutomaticUpdates": true,
+                        "enableAutomaticUpdates": false,
                         "provisionVmAgent": true
                     }
                 }
