@@ -138,5 +138,5 @@ function Task {
 
 }
 
-
+Task -Path $modernFolderRobotsExe -args " -dp"
 Task -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
