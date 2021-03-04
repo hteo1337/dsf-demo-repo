@@ -14,10 +14,10 @@ Param (
 Add-MpPreference -ExclusionPath "C:\Temp"
 
 
-if (Test-Path -Path $modernFolderRobotsExe) {
+# if (Test-Path -Path $modernFolderRobotsExe) {
     
-    & $modernFolderRobotsExe -u $username  -r $robotName -d $domain
-}
+#     & $modernFolderRobotsExe -u $username  -r $robotName -d $domain
+# }
 
 # Remove-Item "C:\Temp" -Force -Recurse
 
