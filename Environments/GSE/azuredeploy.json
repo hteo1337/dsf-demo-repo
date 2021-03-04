@@ -61,7 +61,7 @@
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
         "scriptFileName": "[variables('scriptFileBreakString')[0]]",
-        "configureVM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-username ',parameters('adminusername'),' -robotName ',variables('vmName'))]",
+        "configureVM": "[concat ('powershell -ExecutionPolicy Unrestricted -File ',' ', variables('scriptFileName'),' ','-username ',parameters('adminusername'),' -robotName ',variables('vmName'),' -domain ',variables('vmName'))]",
         "pmVM": {
             "POV": {
                 "virtualMachineSize": "Standard_B4ms",
