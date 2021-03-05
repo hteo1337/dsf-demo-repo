@@ -14,10 +14,10 @@ Param (
 Add-MpPreference -ExclusionPath "C:\Temp"
 
 
-if (Test-Path -Path $modernFolderRobotsExe) {
+# if (Test-Path -Path $modernFolderRobotsExe) {
     
-    & $modernFolderRobotsExe -u $username  -r $robotName  -d $domain
-}
+#     & $modernFolderRobotsExe -u $username  -r $robotName -d $domain
+# }
 
 # Remove-Item "C:\Temp" -Force -Recurse
 
@@ -70,4 +70,89 @@ function Register-EventScript {
 
 # register the script twice
 # Register-EventScript -eventToRegister "Startup" -pathToScript "$currentLocation\ScriptToRun.ps1" -scriptParameters "OnStartup"
-# Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe" -scriptParameters " -dp"
+#  Register-EventScript -eventToRegister "Shutdown" -pathToScript "C:\Temp\ModernRobotProvisioning.exe -dp" -scriptParameters "OnShutdown"
+
+function Task {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $path,
+
+        [Parameter(Mandatory = $true)]
+        [string] $args,
+
+        [Parameter(Mandatory = $false)]
+        [string] $taskName="UiPathRobot",
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("provision", "deprovision")]
+        [string] $taskType="provision"
+
+    )
+
+    $STAction = @()
+    # Set up action to run
+    $STAction += New-ScheduledTaskAction `
+        -Execute 'NET' `
+        -Argument 'START "UiRobotSvc"'
+
+    $STAction += New-ScheduledTaskAction `
+        -Execute "$path" `
+        -Argument "$args"
+
+    # Set up trigger to launch action
+    if ($taskType -eq "provision") {
+        $STTrigger = New-ScheduledTaskTrigger `
+        -AtLogOn 
+        # -Once `
+        # -At ([DateTime]::Now.AddMinutes(1)) `
+        # -RepetitionInterval (New-TimeSpan -Minutes 2) `
+        # -RepetitionDuration (New-TimeSpan -Minutes 10)
+    } else {
+        $STTrigger = New-ScheduledTaskTrigger `
+        -Once `
+        -At ([DateTime]::Now.AddMinutes(1)) `
+    }
+    
+
+    # Set up base task settings - NOTE: Win8 is used for Windows 10
+    $STSettings = New-ScheduledTaskSettingsSet `
+        -Compatibility Win8 `
+        -MultipleInstances IgnoreNew `
+        -AllowStartIfOnBatteries `
+        -DontStopIfGoingOnBatteries `
+        -Hidden `
+        -StartWhenAvailable
+
+    # Name of Scheduled Task
+    $STName = $taskName
+
+    # Create Scheduled Task
+    Register-ScheduledTask `
+        -Action $STAction `
+        -Trigger $STTrigger `
+        -Settings $STSettings `
+        -TaskName $STName `
+        -Description "Executes Machine Policy Retrieval Cycle." `
+        -User "NT AUTHORITY\SYSTEM" `
+        -RunLevel Highest
+
+    # Get the Scheduled Task data and make some tweaks
+    $TargetTask = Get-ScheduledTask -TaskName $STName
+
+    # Set desired tweaks
+    $TargetTask.Author = 'UiPath'
+    $TargetTask.Triggers[0].StartBoundary = [DateTime]::Now.ToString("yyyy-MM-dd'T'HH:mm:ss")
+    # $TargetTask.Triggers[0].EndBoundary = [DateTime]::Now.AddMinutes(3).ToString("yyyy-MM-dd'T'HH:mm:ss")
+    $TargetTask.Settings.AllowHardTerminate = $True
+    # $TargetTask.Settings.DeleteExpiredTaskAfter = 'PT5S'
+    $TargetTask.Settings.ExecutionTimeLimit = 'PT10M'
+    $TargetTask.Settings.volatile = $False
+
+    # Save tweaks to the Scheduled Task
+    $TargetTask | Set-ScheduledTask
+
+}
+
+Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
+
+Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"

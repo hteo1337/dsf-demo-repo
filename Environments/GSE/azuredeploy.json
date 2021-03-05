@@ -54,7 +54,7 @@
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
         "imageName": "DSF-GSE",
         "galleryName": "DSF_POC",
-        "imageVersion": "1.0.4",
+        "imageVersion": "1.0.5",
         "imageRef": "[resourceId('DSF-Presales-RG','Microsoft.Compute/galleries/images/versions',variables('galleryName'), variables('imageName'), variables('imageVersion'))]",
         "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/bootstrap-gse.ps1",
         "scriptUriNamePieces": "[split(variables('scriptUriBase'), '/')]",

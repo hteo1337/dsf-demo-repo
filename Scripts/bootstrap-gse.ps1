@@ -155,4 +155,4 @@ function Task {
 
 Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
 
-Task -taskName "RobotProvisioner" -taskType "deprovision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
+Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
