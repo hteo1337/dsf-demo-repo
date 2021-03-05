@@ -153,6 +153,21 @@ function Task {
 
 }
 
-Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
+# Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
 
-Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
+# Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
+$TargetFile = "$env:SystemRoot\System32\cmd.exe"
+$ShortcutFile = "$env:Public\Desktop\DeProvisionRobot.lnk"
+$WScriptShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
+$Shortcut.TargetPath = $TargetFile
+$Shortcut.Arguments = " /C C:\Temp\ModernRobotProvisioning.exe -dp"
+$Shortcut.Save()
+
+$TargetFile = "$env:SystemRoot\System32\cmd.exe"
+$ShortcutFile = "$env:Public\Desktop\DeProvisionRobot.lnk"
+$WScriptShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
+$Shortcut.TargetPath = $TargetFile
+$Shortcut.Arguments = " /C C:\Temp\ModernRobotProvisioning.exe"
+$Shortcut.Save()
