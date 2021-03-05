@@ -102,10 +102,11 @@ function Task {
     # Set up trigger to launch action
     if ($taskType -eq "provision") {
         $STTrigger = New-ScheduledTaskTrigger `
-        -Once `
-        -At ([DateTime]::Now.AddMinutes(1)) `
-        -RepetitionInterval (New-TimeSpan -Minutes 2) `
-        -RepetitionDuration (New-TimeSpan -Minutes 10)
+        -AtLogOn 
+        # -Once `
+        # -At ([DateTime]::Now.AddMinutes(1)) `
+        # -RepetitionInterval (New-TimeSpan -Minutes 2) `
+        # -RepetitionDuration (New-TimeSpan -Minutes 10)
     } else {
         $STTrigger = New-ScheduledTaskTrigger `
         -Once `
@@ -141,9 +142,9 @@ function Task {
     # Set desired tweaks
     $TargetTask.Author = 'UiPath'
     $TargetTask.Triggers[0].StartBoundary = [DateTime]::Now.ToString("yyyy-MM-dd'T'HH:mm:ss")
-    $TargetTask.Triggers[0].EndBoundary = [DateTime]::Now.AddMinutes(3).ToString("yyyy-MM-dd'T'HH:mm:ss")
+    # $TargetTask.Triggers[0].EndBoundary = [DateTime]::Now.AddMinutes(3).ToString("yyyy-MM-dd'T'HH:mm:ss")
     $TargetTask.Settings.AllowHardTerminate = $True
-    $TargetTask.Settings.DeleteExpiredTaskAfter = 'PT5S'
+    # $TargetTask.Settings.DeleteExpiredTaskAfter = 'PT5S'
     $TargetTask.Settings.ExecutionTimeLimit = 'PT10M'
     $TargetTask.Settings.volatile = $False
 
@@ -154,4 +155,4 @@ function Task {
 
 Task -taskName "RobotDeprovisioner" -taskType "deprovision" -Path $modernFolderRobotsExe -args " -dp"
 
-Task -taskName "RobotProvisioner" -taskType "provision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
+Task -taskName "RobotProvisioner" -taskType "deprovision"  -Path $modernFolderRobotsExe -args " -u $username  -r $robotName -d $domain"
