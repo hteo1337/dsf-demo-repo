@@ -188,7 +188,9 @@
             "apiVersion": "2019-03-01",
             "location": "[variables('location')]",
             "tags": {
-                "AlwaysPoweredOn": "true"
+                "AlwaysPoweredOn": "False",
+                "ExemptFromJIT": "True",
+                "Project": "DSF-Project"
             },
             "properties": {
                 "hardwareProfile": {
