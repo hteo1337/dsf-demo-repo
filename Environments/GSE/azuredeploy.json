@@ -189,7 +189,7 @@
             "location": "[variables('location')]",
             "tags": {
                 "AlwaysPoweredOn": "False",
-                "ExemptFromJIT": "True",
+                "JITExemption": "Yes",
                 "Project": "DSF-Project"
             },
             "properties": {
