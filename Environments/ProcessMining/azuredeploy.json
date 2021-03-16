@@ -62,7 +62,7 @@
 		"galleryName": "DSF_POC",
         "imageVersion": "1.0.0",
 		"imageRef": "[resourceId('DSF-Presales-RG','Microsoft.Compute/galleries/images/versions',variables('galleryName'), variables('imageName'), variables('imageVersion'))]",
-        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Scripts/bootstrap.ps1",
+        "scriptUriBase": "https://raw.githubusercontent.com/hteo1337/dsf-demo-repo/master/Environments/ProcessMining/Setup/bootstrap.ps1",
         "scriptUriNamePieces": "[split(variables('scriptUriBase'), '/')]",
         "scriptFileString": "[variables('scriptUriNamePieces')[sub(length(variables('scriptUriNamePieces')), 1)]]",
         "scriptFileBreakString": "[split(variables('scriptFileString'), '?')]",
