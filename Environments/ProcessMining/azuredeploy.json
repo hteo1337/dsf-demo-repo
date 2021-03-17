@@ -40,7 +40,8 @@
                 "westeurope",
                 "northeurope",
                 "centralus",
-                "centralindia"
+                "centralindia",
+                "australiaeast"
             ],
             "type": "String",
             "metadata": {
