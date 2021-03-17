@@ -34,10 +34,12 @@
             }
         },
         "location": {
-            "defaultValue": "eastus",
+            "defaultValue": "westeurope",
             "allowedValues": [
                 "eastus",
-                "westeurope"
+                "westeurope",
+                "northeurope",
+                "centralus"
             ],
             "type": "String",
             "metadata": {
