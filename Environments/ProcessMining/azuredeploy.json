@@ -39,7 +39,8 @@
                 "eastus",
                 "westeurope",
                 "northeurope",
-                "centralus"
+                "centralus",
+                "centralindia"
             ],
             "type": "String",
             "metadata": {
