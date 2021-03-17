@@ -27,6 +27,10 @@ function Main() {
 
     Start-Process "iisreset.exe" -NoNewWindow 
 
+    # confige bindings for http/https
+    New-WebBinding -Name 'UiPathProcessMining' -Protocol http -Port 80
+    Remove-WebBinding -Name 'UiPathProcessMining' -BindingInformation '*:443:'
+
     if ($licenseCode) {
         licensePM -license $licenseCode
     }
