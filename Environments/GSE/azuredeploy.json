@@ -253,6 +253,10 @@
         }
     ],
     "outputs": {
+        "FQDN": {
+            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
+            "type": "string"
+        },
         "adminusername": {
             "type": "String",
             "value": "[parameters('adminusername')]"
@@ -260,10 +264,6 @@
         "adminpassword": {
             "type": "String",
             "value": "[parameters('adminpassword')]"
-        },
-        "vmDNS": {
-            "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
-            "type": "string"
         }
     }
 }
