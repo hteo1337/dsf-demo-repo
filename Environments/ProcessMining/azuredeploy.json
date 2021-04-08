@@ -282,6 +282,14 @@
         "vmDNS": {
             "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses',variables('publicIpAddressName'))).dnsSettings.fqdn]",
             "type": "string"
+        },
+        "SuperadminUsername": {
+            "type": "String",
+            "value": "PM-Admin"
+        },
+        "SuperadminPassword": {
+            "type": "String",
+            "value": "fR1WiA3AZz!%"
         }
     }
 }
