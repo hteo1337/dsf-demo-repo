@@ -309,7 +309,9 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('orchVMNamePrefix'),'-', copyindex())]",
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "copy": {
         "name": "virtualMachineLoop",
@@ -483,7 +485,9 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('robotVMNamePrefix')]",
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "location": "[parameters('location')]",
       "dependsOn": [
@@ -562,7 +566,9 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('elkVMNamePrefix')]",
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "location": "[parameters('location')]",
       "dependsOn": [
@@ -765,7 +771,9 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('haaVMNamePrefix'),'-', copyindex())]",
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "copy": {
         "name": "virtualMachineLoop",
@@ -859,7 +867,9 @@
         "[resourceId('Microsoft.Network/networkInterfaces/', variables('sqlNicNamePrefix'))]"
       ],
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "properties": {
         "hardwareProfile": {
@@ -914,7 +924,9 @@
       "name": "[variables('sqlVMNamePrefix')]",
       "location": "[parameters('location')]",
       "tags": {
-        "AlwaysPoweredOn": "True"
+        "AlwaysPoweredOn": "True",
+        "JITExemption": "Yes",
+        "Project": "DSF-Project"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines', variables('sqlVMNamePrefix'))]"
