@@ -174,7 +174,9 @@
                 "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
             ],
             "tags": {
-                "AlwaysPoweredOn": "true"
+                "AlwaysPoweredOn": "True",
+                "JITExemption": "Yes",
+                "Project": "DSF-Project"
             },
             "properties": {
                 "hardwareProfile": {

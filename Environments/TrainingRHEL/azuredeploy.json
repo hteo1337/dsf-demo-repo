@@ -186,8 +186,10 @@
       "apiVersion": "2018-10-01",
       "location": "[variables('location')]",
       "tags": {
-        "AlwaysPoweredOn": "true"
-      },
+                "AlwaysPoweredOn": "True",
+                "JITExemption": "Yes",
+                "Project": "DSF-Project"
+            },
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('virtualMachineSize')]"
@@ -281,8 +283,10 @@
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('elkRHELVMNamePrefix'),'-', copyindex())]",
       "tags": {
-        "AlwaysPoweredOn": "True"
-      },
+                "AlwaysPoweredOn": "True",
+                "JITExemption": "Yes",
+                "Project": "DSF-Project"
+            },
       "copy": {
         "name": "virtualMachineLoop",
         "count": "[variables('elkNumberOfInstances')]"

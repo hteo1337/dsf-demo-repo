@@ -186,8 +186,10 @@
             "apiVersion": "2019-03-01",
             "location": "[variables('location')]",
             "tags": {
-                "AlwaysPoweredOn": "true"
-              },
+                "AlwaysPoweredOn": "True",
+                "JITExemption": "Yes",
+                "Project": "DSF-Project"
+            },
             "properties": {
                 "hardwareProfile": {
                     "vmSize": "[parameters('virtualMachineSize')]"
